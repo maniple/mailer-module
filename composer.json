@@ -1,0 +1,17 @@
+{
+    "name": "maniple/mailer-module",
+    "type": "zefram-module",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "xemlock",
+            "email": "xemlock@gmail.com"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-0": {
+            "MailerModule_": "library/"
+        }
+    }
+}
