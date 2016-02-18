@@ -10,8 +10,8 @@
     ],
     "require": {},
     "autoload": {
-        "psr-0": {
-            "MailerModule_": "library/"
+        "psr-4": {
+            "MailerModule\\": "library/"
         }
     }
 }
