@@ -4,9 +4,15 @@ namespace MailerModule\Entity;
 
 /**
  * @Entity
- * @Table(name="mailer_mails", indexes={
- *     @Index(name="mailer_mails_status_idx", columns={"status", "priority", "created_at"})
- * })
+ * @Table(
+ *     name="mailer_mails",
+ *     indexes={
+ *         @Index(name="mailer_mails_status_idx", columns={"status", "priority", "created_at"})
+ *     },
+ *     uniqueConstraints={
+ *         @UniqueConstraint(name="mailer_mails_lock_key_key", columns={"lock_key"})
+ *     }
+ * )
  */
 class Mail
 {
@@ -56,7 +62,7 @@ class Mail
     protected $_status = self::STATUS_PENDING;
 
     /**
-     * @Column(name="lock_key", type="string", length=32, unique=true, nullable=true)
+     * @Column(name="lock_key", type="string", length=32, nullable=true)
      */
     protected $_lockKey;
 
