@@ -15,6 +15,11 @@ class Mailer
     protected $_numRetries = 3;
 
     /**
+     * @var \Zend_EventManager_EventManager
+     */
+    protected $_eventManager;
+
+    /**
      * @param \MailerModule\Queue\QueueInterface $mailQueue
      * @return \MailerModule\Mailer
      */
@@ -37,6 +42,20 @@ class Mailer
     }
 
     /**
+     * @return \Zend_EventManager_EventManager
+     */
+    public function getEventManager()
+    {
+        if (!$this->_eventManager) {
+            $this->_eventManager = new \Zend_EventManager_EventManager(array(
+                __CLASS__,
+                get_class($this),
+            ));
+        }
+        return $this->_eventManager;
+    }
+
+    /**
      * Sends message, reports status in the message. Entity is not persisted.
      *
      * @param \MailerModule\Entity\Message $message
@@ -46,7 +65,7 @@ class Mailer
         $mail = new \Zefram_Mail;
 
         // properly display images in Thunderbird
-        $mail->setType(Zend_Mime::MULTIPART_RELATED);
+        $mail->setType(\Zend_Mime::MULTIPART_RELATED);
         $mail->setSubject($message->getSubject());
 
         if ($message->getReplyToEmail()) {
@@ -83,13 +102,18 @@ class Mailer
                 break;
         }
 
+        $this->getEventManager()->trigger('send.pre', $this, array(
+            'message' => $message,
+            'mail' => $mail,
+        ));
+
         try {
             $mail->send();
 
-        } catch (\Exception $e) {
+        } catch (\Exception $exception) {
         }
 
-        if (empty($e)) {
+        if (empty($exception)) {
             $message->setStatus(MailStatus::SENT);
             $message->setSentAt(new \DateTime('now'));
 
@@ -108,6 +132,19 @@ class Mailer
         // unlock message
         $message->setLockedAt(null);
         $message->setLockKey(null);
+
+        if ($exception) {
+            $this->getEventManager()->trigger('send.error', $this, array(
+                'exception' => $exception,
+                'message' => $message,
+                'mail' => $mail,
+            ));
+        } else {
+            $this->getEventManager()->trigger('send', $this, array(
+                'message' => $message,
+                'mail' => $mail,
+            ));
+        }
     }
 
     /**

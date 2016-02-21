@@ -8,7 +8,7 @@ use MailerModule\Queue\DoctrineQueue;
 abstract class QueueFactory
 {
     /**
-     * @param $container
+     * @param object $container
      * @return \MailerModule\Queue\QueueInterface
      * @throws Exception
      */
