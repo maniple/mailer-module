@@ -9,10 +9,10 @@ use MailerModule\RecipientType;
  * @Table(
  *     name="mailer_recipients",
  *     indexes={
- *         @Index(columns={"mail_id"})
+ *         @Index(columns={"message_id"})
  *     },
  *     uniqueConstraints={
- *         @UniqueConstraint(columns={"mail_id", "email"})
+ *         @UniqueConstraint(columns={"message_id", "email"})
  *     }
  * )
  */
@@ -27,11 +27,17 @@ class Recipient
     protected $id;
 
     /**
-     * @ManyToOne(targetEntity="MailerModule\Entity\Mail")
-     * @JoinColumn(name="mail_id", referencedColumnName="mail_id")
-     * @var \MailerModule\Entity\Mail
+     * @ManyToOne(targetEntity="MailerModule\Entity\Message")
+     * @JoinColumn(name="message_id", referencedColumnName="message_id")
+     * @var \MailerModule\Entity\Message
     */
-    protected $mail;
+    protected $message;
+
+    /**
+     * @Column(name="recipient_type")
+     * @var string
+     */
+    protected $type = RecipientType::TO;
 
     /**
      * @Column(name="email")
@@ -46,26 +52,20 @@ class Recipient
     protected $name;
 
     /**
-     * @Column(name="recipient_type")
-     * @var string
+     * @return \MailerModule\Entity\Message
      */
-    protected $type = RecipientType::TO;
-
-    /**
-     * @return \MailerModule\Entity\Mail
-     */
-    public function getMail()
+    public function getMessage()
     {
-        return $this->mail;
+        return $this->message;
     }
 
     /**
-     * @param \MailerModule\Entity\Mail $mail
+     * @param \MailerModule\Entity\Message $message
      * @return Recipient
      */
-    public function setMail(Mail $mail = null)
+    public function setMessage(Message $message = null)
     {
-        $this->mail = $mail;
+        $this->message = $message;
         return $this;
     }
 

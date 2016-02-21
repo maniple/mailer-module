@@ -2,7 +2,7 @@
 
 namespace MailerModule;
 
-use MailerModule\Entity\Mail;
+use MailerModule\Entity\Message;
 use MailerModule\Queue\QueueInterface;
 
 class Mailer
@@ -10,15 +10,15 @@ class Mailer
     /**
      * @var \MailerModule\Queue\QueueInterface
      */
-    protected $_mailQueue;
+    protected $_messageQueue;
 
     /**
      * @param \MailerModule\Queue\QueueInterface $mailQueue
      * @return \MailerModule\Mailer
      */
-    public function setMailQueue(QueueInterface $mailQueue)
+    public function setMessageQueue(QueueInterface $mailQueue)
     {
-        $this->_mailQueue = $mailQueue;
+        $this->_messageQueue = $mailQueue;
         return $this;
     }
 
@@ -26,19 +26,19 @@ class Mailer
      * @return \MailerModule\Queue\QueueInterface
      * @throws \Exception
      */
-    public function getMailQueue()
+    public function getMessageQueue()
     {
-        if (!$this->_mailQueue) {
+        if (!$this->_messageQueue) {
             throw new \Exception('Mail queue has not been provided');
         }
-        return $this->_mailQueue;
+        return $this->_messageQueue;
     }
 
     /**
      *
-     * @param \MailerModule\Entity\Mail $mail
+     * @param \MailerModule\Entity\Message $mail
      */
-    public function send(Mail $mail)
+    public function send(Message $mail)
     {
 
     }
@@ -46,17 +46,17 @@ class Mailer
     /**
      * Put mail in the queue
      *
-     * @param Mail $mail
+     * @param Message $mail
      * @throws \Exception
      */
-    public function enqueue(Mail $mail)
+    public function enqueue(Message $mail)
     {
-        $this->getMailQueue()->enqueue($mail);
+        $this->getMessageQueue()->enqueue($mail);
     }
 
     public function sendFromQueue($count = 1)
     {
-        foreach ($this->getMailQueue()->dequeue($count) as $mail) {
+        foreach ($this->getMessageQueue()->dequeue($count) as $mail) {
             try {
                 $this->send($mail);
             } catch (\Exception $e) {
@@ -123,7 +123,7 @@ class Mailer
                 if ($mail['format'] == Model_MailQueue::FORMAT_HTML) {
                     $mailer->setBodyHtml($mail['body']);
                 } else {
-                    $mailer->setBodyText($mail['body']);
+                    $mailer->setContent($mail['body']);
                 }
                 $mailer->send();
 

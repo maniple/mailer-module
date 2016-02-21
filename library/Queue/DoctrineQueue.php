@@ -5,7 +5,7 @@ namespace MailerModule\Queue;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManager;
-use MailerModule\Entity\Mail;
+use MailerModule\Entity\Message;
 use MailerModule\MailStatus;
 
 /**
@@ -40,17 +40,9 @@ class DoctrineQueue extends AbstractQueue
         return $this->_entityManager;
     }
 
-    public function enqueue(Mail $mail)
+    public function enqueue(Message $mail)
     {
         $this->getEntityManager()->transactional(function (EntityManager $em) use ($mail) {
-            if ($em->contains($mail)) {
-                $qb = $em->createQueryBuilder();
-                $qb->delete('MailerModule\Entity\Lock', 'lock');
-                $qb->where('lock.mail = :mail');
-                $qb->setParameter('mail', $mail);
-                $qb->getQuery()->execute();
-            }
-
             $mail->setStatus(MailStatus::PENDING);
             $mail->setCreatedAt(new \DateTime('now'));
             $mail->setLockedAt(null);
@@ -74,7 +66,7 @@ class DoctrineQueue extends AbstractQueue
         $transactional = function (EntityManager $em) use ($self, $maxResults, $lockTimeout, $collection) {
             $qb = $em->createQueryBuilder();
             $qb->select('m');
-            $qb->from('MailerModule\Entity\Mail', 'm');
+            $qb->from('MailerModule\Entity\Message', 'm');
             $qb->where('m.status = :statusPending');
             $qb->setParameter('statusPending', MailStatus::PENDING);
             if ($lockTimeout > 0) {
@@ -90,7 +82,7 @@ class DoctrineQueue extends AbstractQueue
             $query->setLockMode(LockMode::PESSIMISTIC_WRITE);
 
             foreach ($query->getResult() as $mail) {
-                /** @var \MailerModule\Entity\Mail $mail */
+                /** @var \MailerModule\Entity\Message $mail */
                 $mail->setStatus(MailStatus::LOCKED);
                 $mail->setLockedAt(new \DateTime('now'));
                 $mail->setLockKey($self->generateLockKey());

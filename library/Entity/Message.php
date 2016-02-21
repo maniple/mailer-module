@@ -9,20 +9,28 @@ use MailerModule\RecipientType;
 /**
  * @Entity
  * @Table(
- *     name="mailer_mails",
+ *     name="mailer_messages",
  *     indexes={
+ *         @Index(columns={"campaign_id"}),
  *         @Index(columns={"status", "priority", "created_at"})
  *     }
  * )
  */
-class Mail
+class Message
 {
     /**
      * @Id
-     * @Column(name="mail_id", type="integer")
+     * @Column(name="message_id", type="integer")
      * @GeneratedValue(strategy="AUTO")
      */
     protected $id;
+
+    /**
+     * @ManyToOne(targetEntity="MailerModule\Entity\Campaign")
+     * @JoinColumn(name="campaign_id", referencedColumnName="campaign_id")
+     * @var \MailerModule\Entity\Campaign
+     */
+    protected $campaign;
 
     /**
      * @Column(name="created_at", type="epoch")
@@ -43,16 +51,19 @@ class Mail
 
     /**
      * @Column(name="priority", type="smallint", options={"default"=0})
+     * @var int
      */
     protected $priority = 0;
 
     /**
      * @Column(name="fail_count", type="smallint", options={"default"=0})
+     * @var int
      */
     protected $failCount = 0;
 
     /**
      * @Column(name="status", type="string", length=32)
+     * @var string
      */
     protected $status = MailStatus::PENDING;
 
@@ -68,33 +79,39 @@ class Mail
 
     /**
      * @Column(name="reply_to_name", type="string", length=255, nullable=true)
+     * @var string
      */
     protected $replyToName;
 
     /**
      * @Column(name="subject", type="string", length=255)
+     * @var string
      */
     protected $subject;
 
     /**
-     * @Column(name="body_text", type="text", nullable=true)
+     * @Column(name="content_type", type="string", length=16)
+     * @var string
      */
-    protected $bodyText;
+    protected $contentType;
 
     /**
-     * @Column(name="body_html", type="text", nullable=true)
+     * @Column(name="body_text", type="text")
+     * @var string
      */
-    protected $bodyHtml;
+    protected $content;
 
     /**
+     * @OneToMany(targetEntity="MailerModule\Entity\Recipient", mappedBy="message")
      * @var \Doctrine\Common\Collections\ArrayCollection
-     * @OneToMany(targetEntity="MailerModule\Entity\Recipient", mappedBy="mail")
      */
     protected $recipients;
 
     public function __construct()
     {
         $this->recipients = new ArrayCollection();
+
+        $this->setCreatedAt(new \DateTime('now'));
     }
 
     /**
@@ -107,11 +124,29 @@ class Mail
 
     /**
      * @param mixed $id
-     * @return Mail
+     * @return Message
      */
     public function setId($id)
     {
         $this->id = $id;
+        return $this;
+    }
+
+    /**
+     * @return \MailerModule\Entity\Campaign
+     */
+    public function getCampaign()
+    {
+        return $this->campaign;
+    }
+
+    /**
+     * @param \MailerModule\Entity\Campaign $campaign
+     * @return Message
+     */
+    public function setCampaign(Campaign $campaign)
+    {
+        $this->campaign = $campaign;
         return $this;
     }
 
@@ -125,7 +160,7 @@ class Mail
 
     /**
      * @param mixed $createdAt
-     * @return Mail
+     * @return Message
      */
     public function setCreatedAt(\DateTime $createdAt)
     {
@@ -143,7 +178,7 @@ class Mail
 
     /**
      * @param \DateTime $lockedAt
-     * @return Mail
+     * @return Message
      */
     public function setLockedAt(\DateTime $lockedAt = null)
     {
@@ -161,7 +196,7 @@ class Mail
 
     /**
      * @param mixed $sentAt
-     * @return Mail
+     * @return Message
      */
     public function setSentAt($sentAt)
     {
@@ -179,7 +214,7 @@ class Mail
 
     /**
      * @param mixed $priority
-     * @return Mail
+     * @return Message
      */
     public function setPriority($priority)
     {
@@ -197,7 +232,7 @@ class Mail
 
     /**
      * @param mixed $failCount
-     * @return Mail
+     * @return Message
      */
     public function setFailCount($failCount)
     {
@@ -218,7 +253,7 @@ class Mail
 
     /**
      * @param mixed $status
-     * @return Mail
+     * @return Message
      */
     public function setStatus($status)
     {
@@ -236,7 +271,7 @@ class Mail
 
     /**
      * @param string $lockKey
-     * @return Mail
+     * @return Message
      */
     public function setLockKey($lockKey)
     {
@@ -254,7 +289,7 @@ class Mail
 
     /**
      * @param mixed $replyToEmail
-     * @return Mail
+     * @return Message
      */
     public function setReplyToEmail($replyToEmail)
     {
@@ -272,7 +307,7 @@ class Mail
 
     /**
      * @param mixed $replyToName
-     * @return Mail
+     * @return Message
      */
     public function setReplyToName($replyToName)
     {
@@ -290,7 +325,7 @@ class Mail
 
     /**
      * @param mixed $subject
-     * @return Mail
+     * @return Message
      */
     public function setSubject($subject)
     {
@@ -299,38 +334,38 @@ class Mail
     }
 
     /**
-     * @return mixed
+     * @return string
      */
-    public function getBodyText()
+    public function getContentType()
     {
-        return $this->bodyText;
+        return $this->contentType;
     }
 
     /**
-     * @param mixed $bodyText
-     * @return Mail
+     * @param string $contentType
+     * @return Message
      */
-    public function setBodyText($bodyText)
+    public function setContentType($contentType)
     {
-        $this->bodyText = $bodyText;
+        $this->contentType = $contentType;
         return $this;
     }
 
     /**
      * @return mixed
      */
-    public function getBodyHtml()
+    public function getContent()
     {
-        return $this->bodyHtml;
+        return $this->content;
     }
 
     /**
-     * @param mixed $bodyHtml
-     * @return Mail
+     * @param mixed $content
+     * @return Message
      */
-    public function setBodyHtml($bodyHtml)
+    public function setContent($content)
     {
-        $this->bodyHtml = $bodyHtml;
+        $this->content = $content;
         return $this;
     }
 
