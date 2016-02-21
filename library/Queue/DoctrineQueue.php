@@ -3,8 +3,10 @@
 namespace MailerModule\Queue;
 
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManager;
+use MailerModule\Entity\Campaign;
 use MailerModule\Entity\Message;
 use MailerModule\MailStatus;
 
@@ -40,19 +42,34 @@ class DoctrineQueue extends AbstractQueue
         return $this->_entityManager;
     }
 
-    public function enqueue(Message $mail)
+    public function enqueue($messages)
     {
-        $this->getEntityManager()->transactional(function (EntityManager $em) use ($mail) {
-            $mail->setStatus(MailStatus::PENDING);
-            $mail->setCreatedAt(new \DateTime('now'));
-            $mail->setLockedAt(null);
-            $mail->setSentAt(null);
-            $mail->setFailCount(0);
+        $messages = $this->_toMessageCollection($messages);
 
-            $em->persist($mail);
+        $this->getEntityManager()->transactional(function (EntityManager $em) use ($messages) {
+            foreach ($messages as $message) {
+                /** @var Message $message */
+                $message->setStatus(MailStatus::PENDING);
+                $message->setCreatedAt(new \DateTime('now'));
+                $message->setLockedAt(null);
+                $message->setSentAt(null);
+                $message->setFailCount(0);
+
+                $em->persist($message);
+            }
         });
 
-        return $this;
+        // at this point all campaigns are expected to be persisted
+        $campaigns = array();
+        foreach ($messages as $message) {
+            /** @var Message $message */
+            if (null !== ($campaign = $message->getCampaign())) {
+                $campaigns[] = $campaign;
+            }
+        }
+        if ($campaigns) {
+            $this->_refreshCampaignCounters($campaigns);
+        }
     }
 
     public function dequeue($maxResults = 1, $lockTimeout = null)
@@ -81,18 +98,84 @@ class DoctrineQueue extends AbstractQueue
             $query = $qb->getQuery();
             $query->setLockMode(LockMode::PESSIMISTIC_WRITE);
 
-            foreach ($query->getResult() as $mail) {
-                /** @var \MailerModule\Entity\Message $mail */
-                $mail->setStatus(MailStatus::LOCKED);
-                $mail->setLockedAt(new \DateTime('now'));
-                $mail->setLockKey($self->generateLockKey());
+            foreach ($query->getResult() as $message) {
+                /** @var Message $message */
+                $message->setStatus(MailStatus::LOCKED);
+                $message->setLockedAt(new \DateTime('now'));
+                $message->setLockKey($self->generateLockKey());
 
-                $em->persist($mail);
-                $collection->add($mail);
+                $em->persist($message);
+                $collection->add($message);
             }
         };
         $this->getEntityManager()->transactional($transactional);
 
         return $collection;
+    }
+
+    protected function _refreshCampaignCounters(array $campaigns)
+    {
+        $em = $this->getEntityManager();
+
+        // due to compatibility issues (no uniform syntax for RDBMS)
+        // it must be done in 3 selects - fortunately status column
+        // is indexed, so the cost is not that big
+
+        // Subselects aren't supported in DQL, we have to deal with raw SQL
+        // The main complexity is properly handling the mapping between
+        // entity fields and columns
+
+        $campaignInfo = $em->getClassMetadata('MailerModule\Entity\Campaign');
+        $messageInfo = $em->getClassMetadata('MailerModule\Entity\Message');
+
+        $sql = "
+                UPDATE [campaignTable]
+                SET
+                    [messageCountColumn] = (
+                        SELECT COUNT(1)
+                            FROM [messageTable]
+                            WHERE [campaignIdColumn] = [campaignTable].[idColumn]
+                    ),
+                    [sentMessageCountColumn] = (
+                        SELECT COUNT(1)
+                            FROM [messageTable]
+                            WHERE [campaignIdColumn] = [campaignTable].[idColumn] AND [statusColumn] = :statusSent
+                    ),
+                    [failedMessageCountColumn] = (
+                        SELECT COUNT(1)
+                            FROM [messageTable]
+                            WHERE [campaignIdColumn] = [campaignTable].[idColumn] AND [statusColumn] = :statusFailed
+                    )
+                WHERE
+                    [idColumn] IN (:campaignIds)
+            ";
+
+        $sql = strtr($sql, array(
+            '[campaignTable]' => $campaignInfo->getTableName(),
+            '[idColumn]' => $campaignInfo->getColumnName('id'),
+            '[messageCountColumn]' => $campaignInfo->getColumnName('messageCount'),
+            '[sentMessageCountColumn]' => $campaignInfo->getColumnName('sentMessageCount'),
+            '[failedMessageCountColumn]' => $campaignInfo->getColumnName('failedMessageCount'),
+            '[messageTable]' => $messageInfo->getTableName(),
+            '[statusColumn]' => $messageInfo->getColumnName('status'),
+            '[campaignIdColumn]' => $messageInfo->getSingleAssociationJoinColumnName('campaign'),
+        ));
+
+        $em->getConnection()->executeQuery(
+            $sql,
+            array(
+                'statusSent' => MailStatus::SENT,
+                'statusFailed' => MailStatus::FAILED,
+                'campaignIds' => array_map(function (Campaign $campaign) {
+                    return $campaign->getId();
+                }, $campaigns),
+            ),
+            array(
+                'campaignIds' => Connection::PARAM_INT_ARRAY,
+            )
+        );
+
+        // refresh counter values in Campaign entities
+        array_map(array($em, 'refresh'), $campaigns);
     }
 }

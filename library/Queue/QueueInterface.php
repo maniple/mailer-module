@@ -8,14 +8,14 @@ use Doctrine\Common\Collections\ArrayCollection;
 interface QueueInterface
 {
     /**
-     * Inserts mail in the queue
+     * Inserts messages in the queue
      *
-     * @param \MailerModule\Entity\Message $mail
+     * @param \MailerModule\Entity\Message|\Traversable|array $messages
      */
-    public function enqueue(Message $mail);
+    public function enqueue($messages);
 
     /**
-     * Locks and returns first maxResults mails that are pending in the queue.
+     * Locks and returns first maxResults messages that are pending in the queue.
      *
      * @param int $maxResults
      * @param int $lockTimeout
