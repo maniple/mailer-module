@@ -9,10 +9,10 @@ use MailerModule\RecipientType;
  * @Table(
  *     name="mailer_recipients",
  *     indexes={
- *         @Index(name="mailer_recipients_mail_id", columns={"mail_id"})
+ *         @Index(columns={"mail_id"})
  *     },
  *     uniqueConstraints={
- *         @UniqueConstraint(name="mailer_recipients_mail_id_email_key", columns={"mail_id", "email"})
+ *         @UniqueConstraint(columns={"mail_id", "email"})
  *     }
  * )
  */
@@ -24,39 +24,39 @@ class Recipient
      * @GeneratedValue(strategy="AUTO")
      * @var int
      */
-    protected $_id;
+    protected $id;
 
     /**
      * @ManyToOne(targetEntity="MailerModule\Entity\Mail")
      * @JoinColumn(name="mail_id", referencedColumnName="mail_id")
      * @var \MailerModule\Entity\Mail
     */
-    protected $_mail;
+    protected $mail;
 
     /**
      * @Column(name="email")
      * @var string
      */
-    protected $_email;
+    protected $email;
 
     /**
      * @Column(name="name")
      * @var string
      */
-    protected $_name;
+    protected $name;
 
     /**
      * @Column(name="recipient_type")
      * @var string
      */
-    protected $_type = RecipientType::TO;
+    protected $type = RecipientType::TO;
 
     /**
      * @return \MailerModule\Entity\Mail
      */
     public function getMail()
     {
-        return $this->_mail;
+        return $this->mail;
     }
 
     /**
@@ -65,7 +65,7 @@ class Recipient
      */
     public function setMail(Mail $mail = null)
     {
-        $this->_mail = $mail;
+        $this->mail = $mail;
         return $this;
     }
 
@@ -74,7 +74,7 @@ class Recipient
      */
     public function getEmail()
     {
-        return $this->_email;
+        return $this->email;
     }
 
     /**
@@ -83,7 +83,7 @@ class Recipient
      */
     public function setEmail($email)
     {
-        $this->_email = $email;
+        $this->email = $email;
         return $this;
     }
 
@@ -92,7 +92,7 @@ class Recipient
      */
     public function getName()
     {
-        return $this->_name;
+        return $this->name;
     }
 
     /**
@@ -101,7 +101,7 @@ class Recipient
      */
     public function setName($name)
     {
-        $this->_name = $name;
+        $this->name = $name;
         return $this;
     }
 
@@ -110,10 +110,10 @@ class Recipient
      */
     public function getType()
     {
-        if ((null !== $this->_type) && !$this->_type instanceof RecipientType) {
-            $this->_type = RecipientType::create($this->_type);
+        if ((null !== $this->type) && !$this->type instanceof RecipientType) {
+            $this->type = RecipientType::create($this->type);
         }
-        return $this->_type;
+        return $this->type;
     }
 
     /**
@@ -122,7 +122,7 @@ class Recipient
      */
     public function setType($type)
     {
-        $this->_type = RecipientType::createOrNull($type);
+        $this->type = RecipientType::createOrNull($type);
         return $this;
     }
 }

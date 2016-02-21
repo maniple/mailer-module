@@ -11,7 +11,7 @@ use MailerModule\RecipientType;
  * @Table(
  *     name="mailer_mails",
  *     indexes={
- *         @Index(name="mailer_mails_status_idx", columns={"status", "priority", "created_at"})
+ *         @Index(columns={"status", "priority", "created_at"})
  *     }
  * )
  */
@@ -22,67 +22,79 @@ class Mail
      * @Column(name="mail_id", type="integer")
      * @GeneratedValue(strategy="AUTO")
      */
-    protected $_id;
+    protected $id;
 
     /**
      * @Column(name="created_at", type="epoch")
+     * @var \DateTime
      */
-    protected $_createdAt;
+    protected $createdAt;
 
     /**
-     * @Column(name="sent_at", type="epoch", nullable=true)
+     * @Column(name="locked_at", type="epoch", nullable=true)
+     * @var \DateTime
      */
-    protected $_sentAt;
+    protected $lockedAt;
+    /**
+     * @Column(name="sent_at", type="epoch", nullable=true)
+     * @var \DateTime
+     */
+    protected $sentAt;
 
     /**
      * @Column(name="priority", type="smallint", options={"default"=0})
      */
-    protected $_priority = 0;
+    protected $priority = 0;
 
     /**
      * @Column(name="fail_count", type="smallint", options={"default"=0})
      */
-    protected $_failCount = 0;
+    protected $failCount = 0;
 
     /**
      * @Column(name="status", type="string", length=32)
      */
-    protected $_status = MailStatus::PENDING;
+    protected $status = MailStatus::PENDING;
 
+    /**
+     * @Column(name="lock_key", type="string", length=32, nullable=true, unique=true)
+     * @var string
+     */
+    protected $lockKey;
     /**
      * @Column(name="reply_to_email", type="string", length=255, nullable=true)
      */
-    protected $_replyToEmail;
+    protected $replyToEmail;
 
     /**
      * @Column(name="reply_to_name", type="string", length=255, nullable=true)
      */
-    protected $_replyToName;
+    protected $replyToName;
 
     /**
      * @Column(name="subject", type="string", length=255)
      */
-    protected $_subject;
+    protected $subject;
 
     /**
      * @Column(name="body_text", type="text", nullable=true)
      */
-    protected $_bodyText;
+    protected $bodyText;
 
     /**
      * @Column(name="body_html", type="text", nullable=true)
      */
-    protected $_bodyHtml;
+    protected $bodyHtml;
 
     /**
      * @var \Doctrine\Common\Collections\ArrayCollection
      * @OneToMany(targetEntity="MailerModule\Entity\Recipient", mappedBy="mail")
      */
-    protected $_recipients;
+    protected $recipients;
 
     public function __construct()
     {
-        $this->_recipients = new ArrayCollection();
+        $this->recipients = new ArrayCollection();
     }
 
     /**
@@ -90,7 +102,7 @@ class Mail
      */
     public function getId()
     {
-        return $this->_id;
+        return $this->id;
     }
 
     /**
@@ -99,7 +111,7 @@ class Mail
      */
     public function setId($id)
     {
-        $this->_id = $id;
+        $this->id = $id;
         return $this;
     }
 
@@ -108,7 +120,7 @@ class Mail
      */
     public function getCreatedAt()
     {
-        return $this->_createdAt;
+        return $this->createdAt;
     }
 
     /**
@@ -117,7 +129,25 @@ class Mail
      */
     public function setCreatedAt($createdAt)
     {
-        $this->_createdAt = $createdAt;
+        $this->createdAt = $createdAt;
+        return $this;
+    }
+
+    /**
+     * @return \DateTime
+     */
+    public function getLockedAt()
+    {
+        return $this->lockedAt;
+    }
+
+    /**
+     * @param \DateTime $lockedAt
+     * @return Mail
+     */
+    public function setLockedAt(\DateTime $lockedAt = null)
+    {
+        $this->lockedAt = $lockedAt;
         return $this;
     }
 
@@ -126,7 +156,7 @@ class Mail
      */
     public function getSentAt()
     {
-        return $this->_sentAt;
+        return $this->sentAt;
     }
 
     /**
@@ -135,7 +165,7 @@ class Mail
      */
     public function setSentAt($sentAt)
     {
-        $this->_sentAt = $sentAt;
+        $this->sentAt = $sentAt;
         return $this;
     }
 
@@ -144,7 +174,7 @@ class Mail
      */
     public function getPriority()
     {
-        return $this->_priority;
+        return $this->priority;
     }
 
     /**
@@ -153,7 +183,7 @@ class Mail
      */
     public function setPriority($priority)
     {
-        $this->_priority = $priority;
+        $this->priority = $priority;
         return $this;
     }
 
@@ -162,7 +192,7 @@ class Mail
      */
     public function getFailCount()
     {
-        return $this->_failCount;
+        return $this->failCount;
     }
 
     /**
@@ -171,7 +201,7 @@ class Mail
      */
     public function setFailCount($failCount)
     {
-        $this->_failCount = $failCount;
+        $this->failCount = $failCount;
         return $this;
     }
 
@@ -180,10 +210,10 @@ class Mail
      */
     public function getStatus()
     {
-        if ((null !== $this->_status) && !$this->_status instanceof MailStatus) {
-            $this->_status = MailStatus::create($this->_status);
+        if ((null !== $this->status) && !$this->status instanceof MailStatus) {
+            $this->status = MailStatus::create($this->status);
         }
-        return $this->_status;
+        return $this->status;
     }
 
     /**
@@ -192,7 +222,25 @@ class Mail
      */
     public function setStatus($status)
     {
-        $this->_status = MailStatus::createOrNull($status);
+        $this->status = MailStatus::createOrNull($status);
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getLockKey()
+    {
+        return $this->lockKey;
+    }
+
+    /**
+     * @param string $lockKey
+     * @return Mail
+     */
+    public function setLockKey($lockKey)
+    {
+        $this->lockKey = $lockKey;
         return $this;
     }
 
@@ -201,7 +249,7 @@ class Mail
      */
     public function getReplyToEmail()
     {
-        return $this->_replyToEmail;
+        return $this->replyToEmail;
     }
 
     /**
@@ -210,7 +258,7 @@ class Mail
      */
     public function setReplyToEmail($replyToEmail)
     {
-        $this->_replyToEmail = $replyToEmail;
+        $this->replyToEmail = $replyToEmail;
         return $this;
     }
 
@@ -219,7 +267,7 @@ class Mail
      */
     public function getReplyToName()
     {
-        return $this->_replyToName;
+        return $this->replyToName;
     }
 
     /**
@@ -228,7 +276,7 @@ class Mail
      */
     public function setReplyToName($replyToName)
     {
-        $this->_replyToName = $replyToName;
+        $this->replyToName = $replyToName;
         return $this;
     }
 
@@ -237,7 +285,7 @@ class Mail
      */
     public function getSubject()
     {
-        return $this->_subject;
+        return $this->subject;
     }
 
     /**
@@ -246,7 +294,7 @@ class Mail
      */
     public function setSubject($subject)
     {
-        $this->_subject = $subject;
+        $this->subject = $subject;
         return $this;
     }
 
@@ -255,7 +303,7 @@ class Mail
      */
     public function getBodyText()
     {
-        return $this->_bodyText;
+        return $this->bodyText;
     }
 
     /**
@@ -264,7 +312,7 @@ class Mail
      */
     public function setBodyText($bodyText)
     {
-        $this->_bodyText = $bodyText;
+        $this->bodyText = $bodyText;
         return $this;
     }
 
@@ -273,7 +321,7 @@ class Mail
      */
     public function getBodyHtml()
     {
-        return $this->_bodyHtml;
+        return $this->bodyHtml;
     }
 
     /**
@@ -282,7 +330,7 @@ class Mail
      */
     public function setBodyHtml($bodyHtml)
     {
-        $this->_bodyHtml = $bodyHtml;
+        $this->bodyHtml = $bodyHtml;
         return $this;
     }
 
@@ -293,14 +341,14 @@ class Mail
     public function getRecipients($recipientType = null)
     {
         if (null === $recipientType) {
-            return $this->_recipients;
+            return $this->recipients;
         }
 
         if (!$recipientType instanceof RecipientType) {
             $recipientType = RecipientType::create($recipientType);
         }
 
-        return $this->_recipients->filter(function (Recipient $entry) use ($recipientType) {
+        return $this->recipients->filter(function (Recipient $entry) use ($recipientType) {
             return $recipientType->equals($entry->getType());
         });
     }

@@ -2,7 +2,9 @@
 
 namespace MailerModule\Queue;
 
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManager;
 use MailerModule\Entity\Mail;
 use MailerModule\MailStatus;
@@ -10,7 +12,7 @@ use MailerModule\MailStatus;
 /**
  * Doctrine based queue for mail entities
  */
-class DoctrineQueue implements QueueInterface
+class DoctrineQueue extends AbstractQueue
 {
     /**
      * @var \Doctrine\ORM\EntityManager
@@ -43,20 +45,16 @@ class DoctrineQueue implements QueueInterface
     {
         $this->getEntityManager()->transactional(function (EntityManager $em) use ($mail) {
             if ($em->contains($mail)) {
-                /*
                 $qb = $em->createQueryBuilder();
                 $qb->delete('MailerModule\Entity\Lock', 'lock');
                 $qb->where('lock.mail = :mail');
                 $qb->setParameter('mail', $mail);
                 $qb->getQuery()->execute();
-                */
-                $q = $em->createQuery('DELETE MailerModule\Entity\Lock lock WHERE lock.mail = :mail');
-                $q->setParameter('mail', $mail);
-                $q->execute();
             }
 
             $mail->setStatus(MailStatus::PENDING);
             $mail->setCreatedAt(new \DateTime('now'));
+            $mail->setLockedAt(null);
             $mail->setSentAt(null);
             $mail->setFailCount(0);
 
@@ -66,74 +64,44 @@ class DoctrineQueue implements QueueInterface
         return $this;
     }
 
-    public function dequeue()
+    public function dequeue($maxResults = 1, $lockTimeout = null)
     {
-        $em = $this->getEntityManager();
-        $em->getConnection()->transactional(function (Connection $conn) use ($em, &$lock) {
-            $locksTable = $em->getClassMetadata('MailerModule\Entity\Lock')->getTableName();
-            $mailsTable = $em->getClassMetadata('MailerModule\Entity\Mail')->getTableName();
+        $maxResults = (int) $maxResults;
+        $lockTimeout = (int) $lockTimeout;
 
-            $lockKey = bin2hex(random_bytes(16)); // 32 chars
+        $collection = new ArrayCollection();
 
-            $qb = QB::create($conn);
-            $qb->insert($locksTable);
-            $qb->values(array(
-                '`lock_key`' => $lockKey,
-                '`created_at`' => time(),
-                '`mail_id`' =>
-                    QB::create($conn)
-                        ->select('mail_id')
-                        ->from($mailsTable)
-                        ->where($qb->expr()->eq('status', MailStatus::PENDING))
-                        ->orderBy('priority', 'DESC')
-                        ->addOrderBy('created_at', 'ASC')
-                        ->setMaxResults(1)
-            ));
-
-            echo $qb->getSQL();exit;
-
-            $lock = $em->getRepository('MailerModule\Entity\Lock')->findOneBy(array(
-                'lock_key' => $lockKey,
-            ));
-        });
-
-        /** @var \MailerModule\Entity\Lock $lock */
-        if ($lock) {
-            return $lock->getMail();
-        }
-
-        return null;
-    }
-}
-
-// QB with built-in quoting
-class QB extends \Doctrine\DBAL\Query\QueryBuilder
-{
-    public function values(array $values)
-    {
-        $quotedKeys = array();
-        foreach ($values  as $key => $value) {
-            if (substr($key, 0, 1) === '`') {
-                $key = $this->getConnection()->quoteIdentifier(trim($key, '`'));
+        $self = $this;
+        $transactional = function (EntityManager $em) use ($self, $maxResults, $lockTimeout, $collection) {
+            $qb = $em->createQueryBuilder();
+            $qb->select('m');
+            $qb->from('MailerModule\Entity\Mail', 'm');
+            $qb->where('m.status = :statusPending');
+            $qb->setParameter('statusPending', MailStatus::PENDING);
+            if ($lockTimeout > 0) {
+                $qb->orWhere('m.status = :statusLocked AND m.lockedAt < :minLockedAt');
+                $qb->setParameter('statusLocked', MailStatus::LOCKED);
+                $qb->setParameter('minLockedAt', time() - $lockTimeout);
             }
-            if (is_scalar($value)) {
-                $value = $this->quote($value);
+            $qb->orderBy('m.priority', 'DESC');
+            $qb->addOrderBy('m.createdAt', 'ASC');
+            $qb->setMaxResults($maxResults);
+
+            $query = $qb->getQuery();
+            $query->setLockMode(LockMode::PESSIMISTIC_WRITE);
+
+            foreach ($query->getResult() as $mail) {
+                /** @var \MailerModule\Entity\Mail $mail */
+                $mail->setStatus(MailStatus::LOCKED);
+                $mail->setLockedAt(new \DateTime('now'));
+                $mail->setLockKey($self->generateLockKey());
+
+                $em->persist($mail);
+                $collection->add($mail);
             }
-            $quotedKeys[$key] = $value;
-        }
-        return parent::values($quotedKeys);
-    }
+        };
+        $this->getEntityManager()->transactional($transactional);
 
-    public function quote($value)
-    {
-        if (is_int($value) || is_float($value)) {
-            return $value;
-        }
-        return $this->getConnection()->quote($value);
-    }
-
-    public static function create($conn)
-    {
-        return new self($conn);
+        return $collection;
     }
 }
