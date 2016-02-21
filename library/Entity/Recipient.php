@@ -46,7 +46,7 @@ class Recipient
     protected $_name;
 
     /**
-     * @Column(name="type")
+     * @Column(name="recipient_type")
      * @var string
      */
     protected $_type = RecipientType::TO;
