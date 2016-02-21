@@ -22,4 +22,11 @@ interface QueueInterface
      * @return \Doctrine\Common\Collections\ArrayCollection<\MailerModule\Entity\Mail>
      */
     public function dequeue($maxResults = 1, $lockTimeout = null);
+
+    /**
+     * Saves messages
+     *
+     * @param \MailerModule\Entity\Message|\Traversable|array $messages
+     */
+    public function save($messages);
 }

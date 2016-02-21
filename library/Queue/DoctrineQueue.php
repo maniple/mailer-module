@@ -59,17 +59,9 @@ class DoctrineQueue extends AbstractQueue
             }
         });
 
-        // at this point all campaigns are expected to be persisted
-        $campaigns = array();
-        foreach ($messages as $message) {
-            /** @var Message $message */
-            if (null !== ($campaign = $message->getCampaign())) {
-                $campaigns[] = $campaign;
-            }
-        }
-        if ($campaigns) {
-            $this->_refreshCampaignCounters($campaigns);
-        }
+        $this->refreshCampaignCounters(
+            $this->_extractCampaignsFromMessages($messages)
+        );
     }
 
     public function dequeue($maxResults = 1, $lockTimeout = null)
@@ -113,8 +105,23 @@ class DoctrineQueue extends AbstractQueue
         return $collection;
     }
 
-    protected function _refreshCampaignCounters(array $campaigns)
+    public function save($messages)
     {
+        $messages = $this->_toMessageCollection($messages);
+
+        $this->getEntityManager()->transactional(function (EntityManager $em) use ($messages) {
+            foreach ($messages as $message) {
+                $em->persist($message);
+            }
+        });
+    }
+
+    public function refreshCampaignCounters(array $campaigns)
+    {
+        if (empty($campaigns)) {
+            return;
+        }
+
         $em = $this->getEntityManager();
 
         // due to compatibility issues (no uniform syntax for RDBMS)
@@ -129,26 +136,26 @@ class DoctrineQueue extends AbstractQueue
         $messageInfo = $em->getClassMetadata('MailerModule\Entity\Message');
 
         $sql = "
-                UPDATE [campaignTable]
-                SET
-                    [messageCountColumn] = (
-                        SELECT COUNT(1)
-                            FROM [messageTable]
-                            WHERE [campaignIdColumn] = [campaignTable].[idColumn]
-                    ),
-                    [sentMessageCountColumn] = (
-                        SELECT COUNT(1)
-                            FROM [messageTable]
-                            WHERE [campaignIdColumn] = [campaignTable].[idColumn] AND [statusColumn] = :statusSent
-                    ),
-                    [failedMessageCountColumn] = (
-                        SELECT COUNT(1)
-                            FROM [messageTable]
-                            WHERE [campaignIdColumn] = [campaignTable].[idColumn] AND [statusColumn] = :statusFailed
-                    )
-                WHERE
-                    [idColumn] IN (:campaignIds)
-            ";
+            UPDATE [campaignTable]
+            SET
+                [messageCountColumn] = (
+                    SELECT COUNT(1)
+                        FROM [messageTable]
+                        WHERE [campaignIdColumn] = [campaignTable].[idColumn]
+                ),
+                [sentMessageCountColumn] = (
+                    SELECT COUNT(1)
+                        FROM [messageTable]
+                        WHERE [campaignIdColumn] = [campaignTable].[idColumn] AND [statusColumn] = :statusSent
+                ),
+                [failedMessageCountColumn] = (
+                    SELECT COUNT(1)
+                        FROM [messageTable]
+                        WHERE [campaignIdColumn] = [campaignTable].[idColumn] AND [statusColumn] = :statusFailed
+                )
+            WHERE
+                [idColumn] IN (:campaignIds)
+        ";
 
         $sql = strtr($sql, array(
             '[campaignTable]' => $campaignInfo->getTableName(),
@@ -177,5 +184,18 @@ class DoctrineQueue extends AbstractQueue
 
         // refresh counter values in Campaign entities
         array_map(array($em, 'refresh'), $campaigns);
+    }
+
+    protected function _extractCampaignsFromMessages($messages)
+    {
+        // at this point all campaigns are expected to be persisted
+        $campaigns = array();
+        foreach ($messages as $message) {
+            /** @var Message $message */
+            if (null !== ($campaign = $message->getCampaign())) {
+                $campaigns[] = $campaign;
+            }
+        }
+        return $campaigns;
     }
 }

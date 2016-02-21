@@ -241,7 +241,7 @@ class Message
     }
 
     /**
-     * @return mixed
+     * @return MailStatus
      */
     public function getStatus()
     {
@@ -263,6 +263,7 @@ class Message
 
     /**
      * @return string
+     * @internal This method is used for locking purposes, and is not meant for public use
      */
     public function getLockKey()
     {
@@ -272,6 +273,7 @@ class Message
     /**
      * @param string $lockKey
      * @return Message
+     * @internal This method is used for locking purposes, and is not meant for public use
      */
     public function setLockKey($lockKey)
     {

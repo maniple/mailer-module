@@ -12,6 +12,8 @@ class Mailer
      */
     protected $_messageQueue;
 
+    protected $_numRetries = 3;
+
     /**
      * @param \MailerModule\Queue\QueueInterface $mailQueue
      * @return \MailerModule\Mailer
@@ -35,12 +37,77 @@ class Mailer
     }
 
     /**
+     * Sends message, reports status in the message. Entity is not persisted.
      *
-     * @param \MailerModule\Entity\Message $mail
+     * @param \MailerModule\Entity\Message $message
      */
-    public function send(Message $mail)
+    public function send(Message $message)
     {
+        $mail = new \Zefram_Mail;
 
+        // properly display images in Thunderbird
+        $mail->setType(Zend_Mime::MULTIPART_RELATED);
+        $mail->setSubject($message->getSubject());
+
+        if ($message->getReplyToEmail()) {
+            $mail->setReplyTo(
+                $message->getReplyToEmail(),
+                $message->getReplyToName()
+            );
+        }
+
+        foreach ($message->getRecipients() as $recipient) {
+            /** @var \MailerModule\Entity\Recipient $recipient */
+            switch ($recipient->getType()->getValue()) {
+                case RecipientType::TO:
+                    $mail->addTo($recipient->getEmail(), $recipient->getName());
+                    break;
+
+                case RecipientType::CC:
+                    $mail->addCc($recipient->getEmail(), $recipient->getName());
+                    break;
+
+                case RecipientType::BCC:
+                    $mail->addBcc($recipient->getEmail());
+                    break;
+            }
+        }
+
+        switch ($message->getContentType()) {
+            case ContentType::TEXT:
+                $mail->setBodyText($message->getContent());
+                break;
+
+            case ContentType::HTML:
+                $mail->setBodyHtml($message->getContent());
+                break;
+        }
+
+        try {
+            $mail->send();
+
+        } catch (\Exception $e) {
+        }
+
+        if (empty($e)) {
+            $message->setStatus(MailStatus::SENT);
+            $message->setSentAt(new \DateTime('now'));
+
+        } else {
+            // TODO Log error
+            $message->setFailCount($message->getFailCount() + 1);
+
+            if ($message->getFailCount() >= $this->_numRetries) {
+                $message->setStatus(MailStatus::FAILED);
+            } else {
+                $message->setPriority($message->getPriority() - 1);
+                $message->setStatus(MailStatus::PENDING);
+            }
+        }
+
+        // unlock message
+        $message->setLockedAt(null);
+        $message->setLockKey(null);
     }
 
     /**
@@ -56,93 +123,24 @@ class Mailer
 
     public function sendFromQueue($count = 1)
     {
-        foreach ($this->getMessageQueue()->dequeue($count) as $mail) {
-            try {
-                $this->send($mail);
-            } catch (\Exception $e) {
+        $campaigns = array();
 
+        foreach ($this->getMessageQueue()->dequeue($count) as $message) {
+            $this->send($message);
+
+            // TODO what if campaign has changed? That leaves us with the invalid counters on the old campaign
+            // Add lifecycle event listener to EventManager:
+            // http://doctrine-orm.readthedocs.org/projects/doctrine-orm/en/latest/reference/events.html
+
+            $this->getMessageQueue()->save($message);
+
+            if (null !== ($campaign = $message->getCampaign())) {
+                $campaigns[] = $campaign;
             }
-            // TODO update mail state accordingly
-            // TODO sleep between sending mails
+
+            usleep(500000);
         }
+
+        $this->getMessageQueue()->refreshCampaignCounters($campaigns);
     }
 }
-
-/*class Cronjob_Mailer implements Service_Cron_Cronjob
-{
-    public function run(Service_Cron $cron)
-    {
-        $db = $cron->getServiceLocator()->getService('db');
-
-        // release mails that area locked for more than 1 hour
-
-        // try to send 10 mails in a single run
-        $processed = array();
-        $mails_in_a_run = 10;
-        while ($mails_in_a_run > 0) {
-            // fail_count limit!!! && mail_id NOT IN ($processed)
-            $sql = "SELECT * FROM mail_queue WHERE state = 'PENDING'";
-            if ($processed) {
-                $sql .= " AND mail_id NOT IN (";
-                $sql .= implode(', ', array_map(array($db, 'quote'), $processed));
-                $sql .= ")";
-            }
-            $sql .= " ORDER BY created_at LIMIT 1 FOR UPDATE"; // TODO maybe fetch (and lock) all messages needed
-                                        // this will minimize index updates
-            $mail = $db->fetchRow($sql);
-            if (empty($mail)) {
-                echo 'NO MORE MAILS TO SEND';
-                break; // no more mails to send
-            }
-
-            $stmt = $db->query(
-                "UPDATE mail_queue SET state = 'LOCKED', locked_at = ? WHERE mail_id = ? AND state = 'PENDING'",
-                array(date('Y-m-d H:i:s'), $mail['mail_id'])
-            );
-            if ($stmt->rowCount()) {
-                --$mails_in_a_run;
-                // remember this mail's id so that it wont be queried in this run
-                $processed[] = $mail['mail_id'];
-
-                try {
-                // row was successfully locked
-                // TODO send mail
-                $mailer = new Zefram_Mail;
-
-                if ($mail['reply_to_email']) {
-                    $mailer->setReplyTo($mail['reply_to_email'], $mail['reply_to_name']);
-                }
-                $mailer->addTo($mail['to_email'], $mail['to_name']);
-
-                $bcc = json_decode($mail['bcc']);
-                foreach ((array) $bcc as $address) {
-                    $mailer->addBcc($address);
-                }
-
-                $mailer->setSubject($mail['subject']);
-                if ($mail['format'] == Model_MailQueue::FORMAT_HTML) {
-                    $mailer->setBodyHtml($mail['body']);
-                } else {
-                    $mailer->setContent($mail['body']);
-                }
-                $mailer->send();
-
-                // att = mail->createAttachment(file_contents, type, content-disposition, encoding)
-                // att->id = ...
-                // $mail->send();
-
-                $db->query(
-                    "UPDATE mail_queue SET state = 'SENT', sent_at = ? WHERE mail_id = ?",
-                    array(date('Y-m-d H:i:s'), $mail['mail_id'])
-                );
-                } catch (Exception $e) {
-                    $db->query(
-                        "UPDATE mail_queue SET state = ?, fail_count = fail_count + 1 WHERE mail_id = ?",
-                        array($mail['fail_count'] > 3 ? 'FAILED' : 'PENDING', $mail['mail_id'])
-                    );
-                }
-                usleep(500); // sleep 500 mseconds to avoid server load
-            }
-        }
-    }
-}*/
