@@ -2,31 +2,24 @@
 
 namespace MailerModule\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use MailerModule\MailStatus;
+use MailerModule\RecipientType;
+
 /**
  * @Entity
  * @Table(
  *     name="mailer_mails",
  *     indexes={
  *         @Index(name="mailer_mails_status_idx", columns={"status", "priority", "created_at"})
- *     },
- *     uniqueConstraints={
- *         @UniqueConstraint(name="mailer_mails_lock_key_key", columns={"lock_key"})
  *     }
  * )
  */
 class Mail
 {
-    const STATUS_PENDING = 'pending';
-
-    const STATUS_LOCKED  = 'locked';
-
-    const STATUS_SENT    = 'sent';
-
-    const STATUS_FAILED  = 'failed';
-
     /**
      * @Id
-     * @Column(name="mail_id", type="bigint")
+     * @Column(name="mail_id", type="integer")
      * @GeneratedValue(strategy="AUTO")
      */
     protected $_id;
@@ -35,11 +28,6 @@ class Mail
      * @Column(name="created_at", type="epoch")
      */
     protected $_createdAt;
-
-    /**
-     * @Column(name="locked_at", type="epoch", nullable=true)
-     */
-    protected $_lockedAt;
 
     /**
      * @Column(name="sent_at", type="epoch", nullable=true)
@@ -59,12 +47,7 @@ class Mail
     /**
      * @Column(name="status", type="string", length=32)
      */
-    protected $_status = self::STATUS_PENDING;
-
-    /**
-     * @Column(name="lock_key", type="string", length=32, nullable=true)
-     */
-    protected $_lockKey;
+    protected $_status = MailStatus::PENDING;
 
     /**
      * @Column(name="reply_to_email", type="string", length=255, nullable=true)
@@ -75,16 +58,6 @@ class Mail
      * @Column(name="reply_to_name", type="string", length=255, nullable=true)
      */
     protected $_replyToName;
-
-    /**
-     * @Column(name="recipient_email", type="string", length=255)
-     */
-    protected $_recipientEmail;
-
-    /**
-     * @Column(name="recipient_name", type="string", length=255, nullable=true)
-     */
-    protected $_recipientName;
 
     /**
      * @Column(name="subject", type="string", length=255)
@@ -100,6 +73,17 @@ class Mail
      * @Column(name="body_html", type="text", nullable=true)
      */
     protected $_bodyHtml;
+
+    /**
+     * @var \Doctrine\Common\Collections\ArrayCollection
+     * @OneToMany(targetEntity="MailerModule\Entity\Recipient", mappedBy="mail")
+     */
+    protected $_recipients;
+
+    public function __construct()
+    {
+        $this->_recipients = new ArrayCollection();
+    }
 
     /**
      * @return mixed
@@ -134,24 +118,6 @@ class Mail
     public function setCreatedAt($createdAt)
     {
         $this->_createdAt = $createdAt;
-        return $this;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getLockedAt()
-    {
-        return $this->_lockedAt;
-    }
-
-    /**
-     * @param mixed $lockedAt
-     * @return Mail
-     */
-    public function setLockedAt($lockedAt)
-    {
-        $this->_lockedAt = $lockedAt;
         return $this;
     }
 
@@ -214,6 +180,9 @@ class Mail
      */
     public function getStatus()
     {
+        if ((null !== $this->_status) && !$this->_status instanceof MailStatus) {
+            $this->_status = MailStatus::create($this->_status);
+        }
         return $this->_status;
     }
 
@@ -223,25 +192,7 @@ class Mail
      */
     public function setStatus($status)
     {
-        $this->_status = $status;
-        return $this;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getLockKey()
-    {
-        return $this->_lockKey;
-    }
-
-    /**
-     * @param mixed $lockKey
-     * @return Mail
-     */
-    public function setLockKey($lockKey)
-    {
-        $this->_lockKey = $lockKey;
+        $this->_status = MailStatus::createOrNull($status);
         return $this;
     }
 
@@ -278,42 +229,6 @@ class Mail
     public function setReplyToName($replyToName)
     {
         $this->_replyToName = $replyToName;
-        return $this;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getRecipientEmail()
-    {
-        return $this->_recipientEmail;
-    }
-
-    /**
-     * @param mixed $recipientEmail
-     * @return Mail
-     */
-    public function setRecipientEmail($recipientEmail)
-    {
-        $this->_recipientEmail = $recipientEmail;
-        return $this;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getRecipientName()
-    {
-        return $this->_recipientName;
-    }
-
-    /**
-     * @param mixed $recipientName
-     * @return Mail
-     */
-    public function setRecipientName($recipientName)
-    {
-        $this->_recipientName = $recipientName;
         return $this;
     }
 
@@ -369,5 +284,24 @@ class Mail
     {
         $this->_bodyHtml = $bodyHtml;
         return $this;
+    }
+
+    /**
+     * @param string|RecipientType $recipientType
+     * @return ArrayCollection
+     */
+    public function getRecipients($recipientType = null)
+    {
+        if (null === $recipientType) {
+            return $this->_recipients;
+        }
+
+        if (!$recipientType instanceof RecipientType) {
+            $recipientType = RecipientType::create($recipientType);
+        }
+
+        return $this->_recipients->filter(function (Recipient $entry) use ($recipientType) {
+            return $recipientType->equals($entry->getType());
+        });
     }
 }
