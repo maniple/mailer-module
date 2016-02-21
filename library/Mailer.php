@@ -1,5 +1,73 @@
 <?php
 
+namespace MailerModule;
+
+use MailerModule\Entity\Mail;
+use MailerModule\Queue\QueueInterface;
+
+class Mailer
+{
+    /**
+     * @var \MailerModule\Queue\QueueInterface
+     */
+    protected $_mailQueue;
+
+    /**
+     * @param \MailerModule\Queue\QueueInterface $mailQueue
+     * @return \MailerModule\Mailer
+     */
+    public function setMailQueue(QueueInterface $mailQueue)
+    {
+        $this->_mailQueue = $mailQueue;
+        return $this;
+    }
+
+    /**
+     * @return \MailerModule\Queue\QueueInterface
+     * @throws \Exception
+     */
+    public function getMailQueue()
+    {
+        if (!$this->_mailQueue) {
+            throw new \Exception('Mail queue has not been provided');
+        }
+        return $this->_mailQueue;
+    }
+
+    /**
+     *
+     * @param \MailerModule\Entity\Mail $mail
+     */
+    public function send(Mail $mail)
+    {
+
+    }
+
+    /**
+     * Put mail in the queue
+     *
+     * @param Mail $mail
+     * @throws \Exception
+     */
+    public function enqueue(Mail $mail)
+    {
+        $this->getMailQueue()->enqueue($mail);
+    }
+
+    public function sendFromQueue($count = 1)
+    {
+        foreach ($this->getMailQueue()->dequeue($count) as $mail) {
+            try {
+                $this->send($mail);
+            } catch (\Exception $e) {
+
+            }
+            // TODO update mail state accordingly
+            // TODO sleep between sending mails
+        }
+    }
+}
+
 /*class Cronjob_Mailer implements Service_Cron_Cronjob
 {
     public function run(Service_Cron $cron)

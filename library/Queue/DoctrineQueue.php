@@ -3,7 +3,6 @@
 namespace MailerModule\Queue;
 
 use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManager;
 use MailerModule\Entity\Mail;
@@ -21,7 +20,7 @@ class DoctrineQueue extends AbstractQueue
 
     /**
      * @param \Doctrine\ORM\EntityManager $entityManager
-     * @return $this
+     * @return \MailerModule\Queue\DoctrineQueue
      */
     public function setEntityManager(EntityManager $entityManager)
     {
@@ -31,12 +30,12 @@ class DoctrineQueue extends AbstractQueue
 
     /**
      * @return \Doctrine\ORM\EntityManager
-     * @throws Exception
+     * @throws \Exception
      */
     public function getEntityManager()
     {
         if (!$this->_entityManager) {
-            throw new Exception('Entity manager is not provided');
+            throw new \Exception('Entity manager is not provided');
         }
         return $this->_entityManager;
     }

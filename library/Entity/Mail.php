@@ -127,7 +127,7 @@ class Mail
      * @param mixed $createdAt
      * @return Mail
      */
-    public function setCreatedAt($createdAt)
+    public function setCreatedAt(\DateTime $createdAt)
     {
         $this->createdAt = $createdAt;
         return $this;
