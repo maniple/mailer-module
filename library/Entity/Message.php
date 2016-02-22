@@ -96,7 +96,7 @@ class Message
     protected $contentType;
 
     /**
-     * @Column(name="body_text", type="text")
+     * @Column(name="content", type="text")
      * @var string
      */
     protected $content;

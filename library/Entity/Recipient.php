@@ -34,7 +34,7 @@ class Recipient
     protected $message;
 
     /**
-     * @Column(name="recipient_type")
+     * @Column(name="recipient_type", length=16)
      * @var string
      */
     protected $type = RecipientType::TO;
