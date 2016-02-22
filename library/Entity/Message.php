@@ -435,4 +435,22 @@ class Message
             return $recipient->getType() === $recipientType;
         });
     }
+
+    /**
+     * @param string $email
+     * @param string $name
+     * @param string $recipientType
+     * @return Message
+     */
+    public function addRecipient($email, $name = null, $recipientType = RecipientType::TO)
+    {
+        $recipient = new Recipient();
+        $recipient->setEmail($email);
+        $recipient->setName($name);
+        $recipient->setType($recipientType);
+
+        $this->recipients->add($recipient);
+
+        return $this;
+    }
 }
