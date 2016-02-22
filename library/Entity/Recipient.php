@@ -10,9 +10,6 @@ use MailerModule\RecipientType;
  *     name="mailer_recipients",
  *     indexes={
  *         @Index(columns={"message_id"})
- *     },
- *     uniqueConstraints={
- *         @UniqueConstraint(columns={"message_id", "email"})
  *     }
  * )
  */
@@ -20,13 +17,6 @@ class Recipient
 {
     /**
      * @Id
-     * @Column(name="recipient_id", type="integer")
-     * @GeneratedValue(strategy="AUTO")
-     * @var int
-     */
-    protected $id;
-
-    /**
      * @ManyToOne(targetEntity="MailerModule\Entity\Message")
      * @JoinColumn(name="message_id", referencedColumnName="message_id")
      * @var \MailerModule\Entity\Message
@@ -40,13 +30,14 @@ class Recipient
     protected $type = RecipientType::TO;
 
     /**
-     * @Column(name="email")
+     * @Id
+     * @Column(name="email", type="string", length=255)
      * @var string
      */
     protected $email;
 
     /**
-     * @Column(name="name")
+     * @Column(name="name", type="string", length=255, nullable=true)
      * @var string
      */
     protected $name;
