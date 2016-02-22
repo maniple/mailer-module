@@ -109,6 +109,7 @@ class Mailer
 
         try {
             $mail->send();
+            $exception = null;
 
         } catch (\Exception $exception) {
         }
@@ -133,7 +134,7 @@ class Mailer
         $message->setLockedAt(null);
         $message->setLockKey(null);
 
-        if ($exception) {
+        if ($exception)) {
             $this->getEventManager()->trigger('send.error', $this, array(
                 'exception' => $exception,
                 'message' => $message,
