@@ -77,7 +77,7 @@ class Mailer
 
         foreach ($message->getRecipients() as $recipient) {
             /** @var \MailerModule\Entity\Recipient $recipient */
-            switch ($recipient->getType()->getValue()) {
+            switch ($recipient->getType()) {
                 case RecipientType::TO:
                     $mail->addTo($recipient->getEmail(), $recipient->getName());
                     break;
