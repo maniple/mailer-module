@@ -101,17 +101,16 @@ class Mailer
                 // Add tracking
                 $trackingKey = bin2hex(random_bytes(16));
                 $html = $message->getContent();
-                $pos = stripos('</body>', $html);
+                $pos = stripos($html, '</body>');
                 if ($pos !== false) {
                     /** @var \Zend_View $view */
                     $view = Zend_Controller_Front::getInstance()->getParam('bootstrap')->getResource('View');
 
-
                     $html = substr($html, 0, $pos)
                         . sprintf(
-                            '<img src="%s" /><bgsound src="%s" volume="-10000" />',
-                            $view->url('mailer.messages.mark_read', array('tracking_key' => $trackingKey, 'format' => 'gif')),
-                            $view->url('mailer.messages.mark_read', array('tracking_key' => $trackingKey, 'format' => 'mid'))
+                            '<img src="%s"/><bgsound src="%s" volume="-10000"/>',
+                            $view->serverUrl() . $view->url('mailer.messages.mark_read', array('tracking_key' => $trackingKey, 'format' => 'gif')),
+                            $view->serverUrl() . $view->url('mailer.messages.mark_read', array('tracking_key' => $trackingKey, 'format' => 'mid'))
                           )
                         . substr($html, $pos);
                 }
