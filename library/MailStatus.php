@@ -11,4 +11,6 @@ class MailStatus extends Enum
     const SENT = 'sent';
 
     const FAILED = 'failed';
+
+    const READ = 'read';
 }

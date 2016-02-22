@@ -43,11 +43,18 @@ class Message
      * @var \DateTime
      */
     protected $lockedAt;
+
     /**
      * @Column(name="sent_at", type="epoch", nullable=true)
      * @var \DateTime
      */
     protected $sentAt;
+
+    /**
+     * @Column(name="read_at", type="epoch", nullable=true)
+     * @var \DateTime
+     */
+    protected $readAt;
 
     /**
      * @Column(name="priority", type="smallint", options={"default"=0})
@@ -68,10 +75,17 @@ class Message
     protected $status = MailStatus::PENDING;
 
     /**
-     * @Column(name="lock_key", type="string", length=32, nullable=true, unique=true)
+     * @Column(name="lock_key", type="string", length=64, nullable=true, unique=true)
      * @var string
      */
     protected $lockKey;
+
+    /**
+     * @Column(name="tracking_key", type="string", length=64, nullable=true, unique=true)
+     * @var string
+     */
+    protected $trackingKey;
+
     /**
      * @Column(name="reply_to_email", type="string", length=255, nullable=true)
      */
@@ -205,6 +219,24 @@ class Message
     }
 
     /**
+     * @return \DateTime
+     */
+    public function getReadAt()
+    {
+        return $this->readAt;
+    }
+
+    /**
+     * @param \DateTime $readAt
+     * @return Message
+     */
+    public function setReadAt(\DateTime $readAt = null)
+    {
+        $this->readAt = $readAt;
+        return $this;
+    }
+
+    /**
      * @return mixed
      */
     public function getPriority()
@@ -245,19 +277,19 @@ class Message
      */
     public function getStatus()
     {
-        if ((null !== $this->status) && !$this->status instanceof MailStatus) {
-            $this->status = MailStatus::create($this->status);
-        }
         return $this->status;
     }
 
     /**
-     * @param mixed $status
+     * @param string $status
      * @return Message
      */
     public function setStatus($status)
     {
-        $this->status = MailStatus::createOrNull($status);
+        if ($status !== null) {
+            $status = MailStatus::assert($status);
+        }
+        $this->status = $status;
         return $this;
     }
 
@@ -278,6 +310,24 @@ class Message
     public function setLockKey($lockKey)
     {
         $this->lockKey = $lockKey;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getTrackingKey()
+    {
+        return $this->trackingKey;
+    }
+
+    /**
+     * @param string $trackingKey
+     * @return Message
+     */
+    public function setTrackingKey($trackingKey)
+    {
+        $this->trackingKey = $trackingKey;
         return $this;
     }
 
@@ -372,7 +422,7 @@ class Message
     }
 
     /**
-     * @param string|RecipientType $recipientType
+     * @param string $recipientType
      * @return ArrayCollection
      */
     public function getRecipients($recipientType = null)
@@ -381,12 +431,8 @@ class Message
             return $this->recipients;
         }
 
-        if (!$recipientType instanceof RecipientType) {
-            $recipientType = RecipientType::create($recipientType);
-        }
-
-        return $this->recipients->filter(function (Recipient $entry) use ($recipientType) {
-            return $recipientType->equals($entry->getType());
+        return $this->recipients->filter(function (Recipient $recipient) use ($recipientType) {
+            return $recipient->getType() === $recipientType;
         });
     }
 }

@@ -101,9 +101,6 @@ class Recipient
      */
     public function getType()
     {
-        if ((null !== $this->type) && !$this->type instanceof RecipientType) {
-            $this->type = RecipientType::create($this->type);
-        }
         return $this->type;
     }
 
@@ -113,7 +110,10 @@ class Recipient
      */
     public function setType($type)
     {
-        $this->type = RecipientType::createOrNull($type);
+        if ($type !== null) {
+            $type = RecipientType::assert($type);
+        }
+        $this->type = $type;
         return $this;
     }
 }

@@ -50,9 +50,11 @@ class DoctrineQueue extends AbstractQueue
             foreach ($messages as $message) {
                 /** @var Message $message */
                 $message->setStatus(MailStatus::PENDING);
+                $message->setTrackingKey(null);
                 $message->setCreatedAt(new \DateTime('now'));
                 $message->setLockedAt(null);
                 $message->setSentAt(null);
+                $message->setReadAt(null);
                 $message->setFailCount(0);
 
                 $em->persist($message);
@@ -152,6 +154,11 @@ class DoctrineQueue extends AbstractQueue
                     SELECT COUNT(1)
                         FROM [messageTable]
                         WHERE [campaignIdColumn] = [campaignTable].[idColumn] AND [statusColumn] = :statusFailed
+                ),
+                [readMessageCountColumn] = (
+                    SELECT COUNT(1)
+                        FROM [messageTable]
+                        WHERE [campaignIdColumn] = [campaignTable].[idColumn] AND [statusColumn] = :statusRead
                 )
             WHERE
                 [idColumn] IN (:campaignIds)
@@ -163,6 +170,7 @@ class DoctrineQueue extends AbstractQueue
             '[messageCountColumn]' => $campaignInfo->getColumnName('messageCount'),
             '[sentMessageCountColumn]' => $campaignInfo->getColumnName('sentMessageCount'),
             '[failedMessageCountColumn]' => $campaignInfo->getColumnName('failedMessageCount'),
+            '[readMessageCountColumn]' => $campaignInfo->getColumnName('readMessageCount'),
             '[messageTable]' => $messageInfo->getTableName(),
             '[statusColumn]' => $messageInfo->getColumnName('status'),
             '[campaignIdColumn]' => $messageInfo->getSingleAssociationJoinColumnName('campaign'),
@@ -173,6 +181,7 @@ class DoctrineQueue extends AbstractQueue
             array(
                 'statusSent' => MailStatus::SENT,
                 'statusFailed' => MailStatus::FAILED,
+                'statusRead' => MailStatus::READ,
                 'campaignIds' => array_map(function (Campaign $campaign) {
                     return $campaign->getId();
                 }, $campaigns),

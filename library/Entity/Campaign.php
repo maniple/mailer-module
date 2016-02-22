@@ -2,6 +2,7 @@
 
 namespace MailerModule\Entity;
 
+use MailerModule\ContentType;
 use Maniple\ModUser\Entity\User;
 
 /**
@@ -65,6 +66,12 @@ class Campaign
      * @var int
      */
     protected $failedMessageCount = 0;
+
+    /**
+     * @Column(name="read_message_count", type="integer", options={"default"=0})
+     * @var int
+     */
+    protected $readMessageCount = 0;
 
     /**
      * @Column(name="reply_to_email", type="string", length=255, nullable=true)
@@ -246,6 +253,58 @@ class Campaign
     }
 
     /**
+     * @return int
+     */
+    public function getReadMessageCount()
+    {
+        return $this->readMessageCount;
+    }
+
+    /**
+     * @param int $readMessageCount
+     * @return Campaign
+     */
+    public function setReadMessageCount($readMessageCount)
+    {
+        $this->readMessageCount = $readMessageCount;
+        return $this;
+    }
+
+    /**
+     * @return string
+     */
+    public function getReplyToEmail()
+    {
+        return $this->replyToEmail;
+    }
+
+    /**
+     * @param string $replyToEmail
+     */
+    public function setReplyToEmail($replyToEmail)
+    {
+        $this->replyToEmail = $replyToEmail;
+    }
+
+    /**
+     * @return string
+     */
+    public function getReplyToName()
+    {
+        return $this->replyToName;
+    }
+
+    /**
+     * @param string $replyToName
+     * @return Campaign
+     */
+    public function setReplyToName($replyToName)
+    {
+        $this->replyToName = $replyToName;
+        return $this;
+    }
+
+    /**
      * @return string
      */
     public function getSubjectTemplate()
@@ -277,6 +336,9 @@ class Campaign
      */
     public function setContentType($contentType)
     {
+        if ($contentType !== null) {
+            $contentType = ContentType::assert($contentType);
+        }
         $this->contentType = $contentType;
         return $this;
     }
