@@ -23,8 +23,9 @@ class MailerModule_MessagesController extends Zefram_Controller_Action
 
                 if ($campaign = $message->getCampaign()) {
                     $campaign->setReadMessageCount($campaign->getReadMessageCount() + 1);
+                    $entityManager->persist($campaign);
                 }
-                $entityManager->persist($campaign);
+
                 $entityManager->flush();
             }
         }
