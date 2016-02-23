@@ -116,7 +116,7 @@ class Message
     protected $content;
 
     /**
-     * @OneToMany(targetEntity="MailerModule\Entity\Recipient", mappedBy="message")
+     * @OneToMany(targetEntity="MailerModule\Entity\Recipient", mappedBy="message", cascade={"persist", "remove"})
      * @var \Doctrine\Common\Collections\ArrayCollection
      */
     protected $recipients;
