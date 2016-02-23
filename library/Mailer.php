@@ -104,7 +104,7 @@ class Mailer
                 $pos = stripos($html, '</body>');
                 if ($pos !== false) {
                     /** @var \Zend_View $view */
-                    $view = Zend_Controller_Front::getInstance()->getParam('bootstrap')->getResource('View');
+                    $view = \Zend_Controller_Front::getInstance()->getParam('bootstrap')->getResource('View');
 
                     $html = substr($html, 0, $pos)
                         . sprintf(
