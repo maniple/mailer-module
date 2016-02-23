@@ -12,7 +12,7 @@
             1 => 'tracking_key',
             2 => 'format',
         ),
-        'reverse' => 'mailer/messages/mark-read/%s/%s',
+        'reverse' => 'mailer/messages/mark-read/%s.%s',
     ),
 
 );
