@@ -445,9 +445,10 @@ class Message
     public function addRecipient($email, $name = null, $recipientType = RecipientType::TO)
     {
         $recipient = new Recipient();
+        $recipient->setMessage($this);
+        $recipient->setType($recipientType);
         $recipient->setEmail($email);
         $recipient->setName($name);
-        $recipient->setType($recipientType);
 
         $this->recipients->add($recipient);
 
