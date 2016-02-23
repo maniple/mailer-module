@@ -12,7 +12,11 @@ class Mailer
      */
     protected $_messageQueue;
 
-    protected $_numRetries = 3;
+    protected $_numTries = 3;
+
+    protected $_lockTimeout = 300;
+
+    protected $_failPriorityDecrement = 10;
 
     /**
      * @var \Zend_EventManager_EventManager
@@ -134,15 +138,21 @@ class Mailer
         if (empty($exception)) {
             $message->setStatus(MailStatus::SENT);
             $message->setSentAt(new \DateTime('now'));
+            if ($campaign = $message->getCampaign()) {
+                $campaign->setSentMessageCount($campaign->getSentMessageCount() + 1);
+            }
 
         } else {
             // TODO Log error
             $message->setFailCount($message->getFailCount() + 1);
 
-            if ($message->getFailCount() >= $this->_numRetries) {
+            if ($message->getFailCount() >= $this->_numTries) {
                 $message->setStatus(MailStatus::FAILED);
+                if ($campaign = $message->getCampaign()) {
+                    $campaign->setFailedMessageCount($campaign->getFailedMessageCount() + 1);
+                }
             } else {
-                $message->setPriority($message->getPriority() - 1);
+                $message->setPriority($message->getPriority() - $this->_failPriorityDecrement);
                 $message->setStatus(MailStatus::PENDING);
             }
         }
@@ -150,6 +160,9 @@ class Mailer
         // unlock message
         $message->setLockedAt(null);
         $message->setLockKey(null);
+
+        // save message for logging and stats
+        $this->getMessageQueue()->save($message);
 
         if ($exception) {
             $this->getEventManager()->trigger('send.error', $this, array(
@@ -173,21 +186,15 @@ class Mailer
      */
     public function enqueue(Message $mail)
     {
-        $this->getMessageQueue()->enqueue($mail);
+        $this->getMessageQueue()->insert($mail);
     }
 
     public function sendFromQueue($count = 1)
     {
         $campaigns = array();
 
-        foreach ($this->getMessageQueue()->dequeue($count) as $message) {
+        foreach ($this->getMessageQueue()->fetch($count, $this->_lockTimeout) as $message) {
             $this->send($message);
-
-            // TODO what if campaign has changed? That leaves us with the invalid counters on the old campaign
-            // Add lifecycle event listener to EventManager:
-            // http://doctrine-orm.readthedocs.org/projects/doctrine-orm/en/latest/reference/events.html
-
-            $this->getMessageQueue()->save($message);
 
             if (null !== ($campaign = $message->getCampaign())) {
                 $campaigns[] = $campaign;
@@ -195,7 +202,5 @@ class Mailer
 
             usleep(500000);
         }
-
-        $this->getMessageQueue()->refreshCampaignCounters($campaigns);
     }
 }

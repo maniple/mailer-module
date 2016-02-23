@@ -7,12 +7,24 @@ use MailerModule\Entity\Message;
 
 abstract class AbstractQueue implements QueueInterface
 {
+    public function insert($messages)
+    {
+        $messages = $this->_toMessageCollection($messages);
+        $this->_doInsert($messages->toArray());
+    }
+
+    public function save($messages)
+    {
+        $messages = $this->_toMessageCollection($messages);
+        $this->_doSave($messages->toArray());
+    }
+
     /**
      * Generates 32 character key for locking purposes.
      *
      * @return string
      */
-    public function generateLockKey()
+    public function generateRandomKey()
     {
         return bin2hex(random_bytes(16)); // 32 chars
     }
@@ -49,4 +61,18 @@ abstract class AbstractQueue implements QueueInterface
 
         return $messageCollection;
     }
+
+    /**
+     * Performs storage dependent insertion of messages
+     *
+     * @param array<\MailerModule\Entity\Message> $messages
+     */
+    abstract protected function _doInsert(array $messages);
+
+    /**
+     * Performs storage dependent update of messages
+     *
+     * @param array<\MailerModule\Entity\Message> $messages
+     */
+    abstract protected function _doSave(array $messages);
 }

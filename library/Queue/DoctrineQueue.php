@@ -42,31 +42,8 @@ class DoctrineQueue extends AbstractQueue
         return $this->_entityManager;
     }
 
-    public function enqueue($messages)
-    {
-        $messages = $this->_toMessageCollection($messages);
 
-        $this->getEntityManager()->transactional(function (EntityManager $em) use ($messages) {
-            foreach ($messages as $message) {
-                /** @var Message $message */
-                $message->setStatus(MailStatus::PENDING);
-                $message->setTrackingKey(null);
-                $message->setCreatedAt(new \DateTime('now'));
-                $message->setLockedAt(null);
-                $message->setSentAt(null);
-                $message->setReadAt(null);
-                $message->setFailCount(0);
-
-                $em->persist($message);
-            }
-        });
-
-        $this->refreshCampaignCounters(
-            $this->_extractCampaignsFromMessages($messages)
-        );
-    }
-
-    public function dequeue($maxResults = 1, $lockTimeout = null)
+    public function fetch($maxResults = 1, $lockTimeout = null)
     {
         $maxResults = (int) $maxResults;
         $lockTimeout = (int) $lockTimeout;
@@ -96,7 +73,7 @@ class DoctrineQueue extends AbstractQueue
                 /** @var Message $message */
                 $message->setStatus(MailStatus::LOCKED);
                 $message->setLockedAt(new \DateTime('now'));
-                $message->setLockKey($self->generateLockKey());
+                $message->setLockKey($self->generateRandomKey());
 
                 $em->persist($message);
                 $collection->add($message);
@@ -107,10 +84,44 @@ class DoctrineQueue extends AbstractQueue
         return $collection;
     }
 
-    public function save($messages)
+    protected function _doInsert(array $messages)
     {
-        $messages = $this->_toMessageCollection($messages);
+        $this->getEntityManager()->transactional(function (EntityManager $em) use ($messages) {
+            foreach ($messages as $message) {
+                if ($em->contains($message)) {
+                    throw new \Exception(sprintf(
+                        'Message ID=%d is already present in the queue, cannot re-insert',
+                        $message->getId()
+                    ));
+                }
+            }
+            $campaigns = array();
+            foreach ($messages as $message) {
+                /** @var Message $message */
+                $message->setStatus(MailStatus::PENDING);
+                $message->setTrackingKey(null);
+                $message->setCreatedAt(new \DateTime('now'));
+                $message->setLockedAt(null);
+                $message->setSentAt(null);
+                $message->setReadAt(null);
+                $message->setFailCount(0);
 
+                $em->persist($message);
+
+                if ($campaign = $message->getCampaign()) {
+                    $campaign->setMessageCount($campaign->getMessageCount() + 1);
+                    $campaigns[spl_object_hash($campaign)] = $campaign;
+                }
+            }
+            foreach ($campaigns as $campaign) {
+                /** @var Campaign $campaign */
+                $em->persist($campaign);
+            }
+        });
+    }
+
+    protected function _doSave(array $messages)
+    {
         $this->getEntityManager()->transactional(function (EntityManager $em) use ($messages) {
             foreach ($messages as $message) {
                 $em->persist($message);
@@ -118,6 +129,13 @@ class DoctrineQueue extends AbstractQueue
         });
     }
 
+    /**
+     * @param array $campaigns
+     * @throws \Doctrine\DBAL\DBALException
+     * @throws \Doctrine\ORM\Mapping\MappingException
+     * @throws \Exception
+     * @deprecated
+     */
     public function refreshCampaignCounters(array $campaigns)
     {
         if (empty($campaigns)) {
