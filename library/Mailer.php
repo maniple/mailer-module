@@ -102,11 +102,43 @@ class Mailer
                 break;
 
             case ContentType::HTML:
-                // Add tracking
-                $trackingKey = bin2hex(random_bytes(16));
                 $html = $message->getContent();
+
+                // insert files
+                $srcRegex = '/[\s]src=(?P<src>("[^"]+")|(\'[^\']+\'))/i';
+                $html = preg_replace_callback($srcRegex, function ($match) use ($mail) {
+                    $src = $match['src'];
+                    $delim = $src[0];
+                    $src = trim($src, $delim); // remove quotes
+                    if (is_file($src)) {
+                        // Check if this file is an image, use GD2 if available or simple
+                        // type checking if GD2 is not installed
+                        if (function_exists('getimagesize')) {
+                            $info = getimagesize($src);
+                            $type = $info ? image_type_to_mime_type($info[2]) : null;
+                        } else {
+                            $type = \Zefram_File_MimeType_Data::detect($src);
+                        }
+                        if (substr($type, 0, 6) === 'image/') {
+                            // insert inline images
+                            $id = \Zefram_Filter_Slug::filterStatic(basename($src, strrchr($src, '.')));
+                            $attachment = $mail->attachFile($src, array(
+                                'type' => $type,
+                                'id' => $id,
+                                'disposition' => 'inline',
+                            ));
+                            return sprintf(' src=%scid:%s%s', $delim, $attachment->id, $delim);
+                        }
+                        return $match[0];
+                    }
+
+                }, $html);
+
+                // add tracking
+                $trackingKey = bin2hex(random_bytes(16));
                 $pos = stripos($html, '</body>');
                 if ($pos !== false) {
+                    // FIXME No globals and singletons!
                     /** @var \Zend_View $view */
                     $view = \Zend_Controller_Front::getInstance()->getParam('bootstrap')->getResource('View');
 
@@ -118,6 +150,7 @@ class Mailer
                           )
                         . substr($html, $pos);
                 }
+
                 $message->setTrackingKey($trackingKey);
                 $mail->setBodyHtml($html);
                 break;
