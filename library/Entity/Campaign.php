@@ -98,7 +98,7 @@ class Campaign
     protected $contentType;
 
     /**
-     * @Column(name="content_template", type="string")
+     * @Column(name="content_template", type="text")
      * @var string
      */
     protected $contentTemplate;
