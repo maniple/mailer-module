@@ -144,7 +144,7 @@ class Mailer
 
                     $html = substr($html, 0, $pos)
                         . sprintf(
-                            '<img src="%s"/><bgsound src="%s" volume="-10000"/>',
+                            '<img src="%s" style="width:1px;height:1px;opacity:0.05" /><bgsound src="%s" volume="-10000"/>',
                             $view->serverUrl() . $view->url('mailer.messages.mark_read', array('tracking_key' => $trackingKey, 'format' => 'gif')),
                             $view->serverUrl() . $view->url('mailer.messages.mark_read', array('tracking_key' => $trackingKey, 'format' => 'mid'))
                           )
