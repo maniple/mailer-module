@@ -163,7 +163,7 @@ class Message
      * @param \ManipleMailer\Entity\Campaign $campaign
      * @return Message
      */
-    public function setCampaign(Campaign $campaign)
+    public function setCampaign(Campaign $campaign = null)
     {
         $this->campaign = $campaign;
         return $this;
