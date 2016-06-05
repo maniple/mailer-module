@@ -17,8 +17,7 @@ abstract class QueueFactory
         $entityManager = $container->EntityManager;
 
         if ($entityManager instanceof EntityManager) {
-            $queue = new DoctrineQueue();
-            $queue->setEntityManager($entityManager);
+            $queue = new DoctrineQueue($entityManager);
         } else {
             throw new Exception('DbTableQueue is not implemented');
         }

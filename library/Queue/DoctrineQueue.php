@@ -22,12 +22,10 @@ class DoctrineQueue extends AbstractQueue
 
     /**
      * @param \Doctrine\ORM\EntityManager $entityManager
-     * @return \ManipleMailer\Queue\DoctrineQueue
      */
-    public function setEntityManager(EntityManager $entityManager)
+    public function __construct(EntityManager $entityManager)
     {
         $this->_entityManager = $entityManager;
-        return $this;
     }
 
     /**
@@ -148,7 +146,7 @@ class DoctrineQueue extends AbstractQueue
         // it must be done in 3 selects - fortunately status column
         // is indexed, so the cost is not that big
 
-        // Subselects aren't supported in DQL, we have to deal with raw SQL
+        // Subselects aren't supported in DQL, we have to deal with raw SQL.
         // The main complexity is properly handling the mapping between
         // entity fields and columns
 

@@ -2,6 +2,7 @@
 
 namespace ManipleMailer\Entity;
 
+use ManipleMailer\Address;
 use ManipleMailer\ContentType;
 use Maniple\ModUser\Entity\User;
 
@@ -271,36 +272,29 @@ class Campaign
     }
 
     /**
-     * @return string
+     * @return Address
      */
-    public function getReplyToEmail()
+    public function getReplyTo()
     {
-        return $this->replyToEmail;
+        if (null === $this->replyToEmail) {
+            return null;
+        }
+        return new Address($this->replyToEmail, $this->replyToName);
     }
 
     /**
-     * @param string $replyToEmail
-     */
-    public function setReplyToEmail($replyToEmail)
-    {
-        $this->replyToEmail = $replyToEmail;
-    }
-
-    /**
-     * @return string
-     */
-    public function getReplyToName()
-    {
-        return $this->replyToName;
-    }
-
-    /**
-     * @param string $replyToName
+     * @param Address $replyTo
      * @return Campaign
      */
-    public function setReplyToName($replyToName)
+    public function setReplyTo(Address $replyTo = null)
     {
-        $this->replyToName = $replyToName;
+        if (null === $replyTo) {
+            $this->replyToEmail = null;
+            $this->replyToName = null;
+        } else {
+            $this->replyToEmail = $replyTo->getEmail();
+            $this->replyToName = $replyTo->getName();
+        }
         return $this;
     }
 

@@ -8,6 +8,7 @@ abstract class MailerFactory
 {
     /**
      * @param object $container
+     * @return Mailer
      */
     public static function createService($container)
     {

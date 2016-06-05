@@ -3,6 +3,7 @@
 namespace ManipleMailer\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
+use ManipleMailer\Address;
 use ManipleMailer\MailStatus;
 use ManipleMailer\RecipientType;
 
@@ -96,6 +97,18 @@ class Message
      * @var string
      */
     protected $replyToName;
+
+    /**
+     * @Column(name="recipient_email", type="string", length=255)
+     * @var string
+     */
+    protected $recipientEmail;
+
+    /**
+     * @Column(name="recipient_name", type="string", length=255, nullable=true)
+     * @var string
+     */
+    protected $recipientName;
 
     /**
      * @Column(name="subject", type="string", length=255)
@@ -324,38 +337,29 @@ class Message
     }
 
     /**
-     * @return mixed
+     * @return Address
      */
-    public function getReplyToEmail()
+    public function getReplyTo()
     {
-        return $this->replyToEmail;
+        if (null === $this->replyToEmail) {
+            return null;
+        }
+        return new Address($this->replyToEmail, $this->replyToName);
     }
 
     /**
-     * @param mixed $replyToEmail
+     * @param Address $replyTo
      * @return Message
      */
-    public function setReplyToEmail($replyToEmail)
+    public function setReplyTo(Address $replyTo = null)
     {
-        $this->replyToEmail = $replyToEmail;
-        return $this;
-    }
-
-    /**
-     * @return mixed
-     */
-    public function getReplyToName()
-    {
-        return $this->replyToName;
-    }
-
-    /**
-     * @param mixed $replyToName
-     * @return Message
-     */
-    public function setReplyToName($replyToName)
-    {
-        $this->replyToName = $replyToName;
+        if (null === $replyTo) {
+            $this->replyToEmail = null;
+            $this->replyToName = null;
+        } else {
+            $this->replyToEmail = $replyTo->getEmail();
+            $this->replyToName = $replyTo->getName();
+        }
         return $this;
     }
 
@@ -414,36 +418,24 @@ class Message
     }
 
     /**
-     * @param string $recipientType
-     * @return ArrayCollection
+     * @return Address
      */
-    public function getRecipients($recipientType = null)
+    public function getRecipient()
     {
-        if (null === $recipientType) {
-            return $this->recipients;
+        if (null === $this->recipientEmail) {
+            return null;
         }
-
-        return $this->recipients->filter(function (Recipient $recipient) use ($recipientType) {
-            return $recipient->getType() === $recipientType;
-        });
+        return new Address($this->recipientEmail, $this->recipientName);
     }
 
     /**
-     * @param string $email
-     * @param string $name
-     * @param string $recipientType
+     * @param Address $address
      * @return Message
      */
-    public function addRecipient($email, $name = null, $recipientType = RecipientType::TO)
+    public function setRecipient(Address $address)
     {
-        $recipient = new Recipient();
-        $recipient->setMessage($this);
-        $recipient->setType($recipientType);
-        $recipient->setEmail($email);
-        $recipient->setName($name);
-
-        $this->recipients->add($recipient);
-
+        $this->recipientEmail = $address->getEmail();
+        $this->recipientName = $address->getName();
         return $this;
     }
 }

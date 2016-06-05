@@ -1,1 +1,1 @@
-# mailer-module
+# maniple-mailer

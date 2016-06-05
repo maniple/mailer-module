@@ -72,29 +72,12 @@ class Mailer
         $mail->setType(\Zend_Mime::MULTIPART_RELATED);
         $mail->setSubject($message->getSubject());
 
-        if ($message->getReplyToEmail()) {
-            $mail->setReplyTo(
-                $message->getReplyToEmail(),
-                $message->getReplyToName()
-            );
+        if (null !== ($replyTo = $message->getReplyTo())) {
+            $mail->setReplyTo($replyTo->getEmail(), $replyTo->getName());
         }
 
-        foreach ($message->getRecipients() as $recipient) {
-            /** @var \ManipleMailer\Entity\Recipient $recipient */
-            switch ($recipient->getType()) {
-                case RecipientType::TO:
-                    $mail->addTo($recipient->getEmail(), $recipient->getName());
-                    break;
-
-                case RecipientType::CC:
-                    $mail->addCc($recipient->getEmail(), $recipient->getName());
-                    break;
-
-                case RecipientType::BCC:
-                    $mail->addBcc($recipient->getEmail());
-                    break;
-            }
-        }
+        $recipient = $message->getRecipient();
+        $mail->addTo($recipient->getEmail(), $recipient->getName());
 
         switch ($message->getContentType()) {
             case ContentType::TEXT:
