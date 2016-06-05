@@ -1,14 +1,14 @@
 <?php
 
-namespace MailerModule\Queue;
+namespace ManipleMailer\Queue;
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\DBAL\Connection;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManager;
-use MailerModule\Entity\Campaign;
-use MailerModule\Entity\Message;
-use MailerModule\MailStatus;
+use ManipleMailer\Entity\Campaign;
+use ManipleMailer\Entity\Message;
+use ManipleMailer\MailStatus;
 
 /**
  * Doctrine based queue for mail entities
@@ -22,7 +22,7 @@ class DoctrineQueue extends AbstractQueue
 
     /**
      * @param \Doctrine\ORM\EntityManager $entityManager
-     * @return \MailerModule\Queue\DoctrineQueue
+     * @return \ManipleMailer\Queue\DoctrineQueue
      */
     public function setEntityManager(EntityManager $entityManager)
     {
@@ -54,7 +54,7 @@ class DoctrineQueue extends AbstractQueue
         $transactional = function (EntityManager $em) use ($self, $maxResults, $lockTimeout, $collection) {
             $qb = $em->createQueryBuilder();
             $qb->select('m');
-            $qb->from('MailerModule\Entity\Message', 'm');
+            $qb->from('ManipleMailer\Entity\Message', 'm');
             $qb->where('m.status = :statusPending');
             $qb->setParameter('statusPending', MailStatus::PENDING);
             if ($lockTimeout > 0) {
@@ -152,8 +152,8 @@ class DoctrineQueue extends AbstractQueue
         // The main complexity is properly handling the mapping between
         // entity fields and columns
 
-        $campaignInfo = $em->getClassMetadata('MailerModule\Entity\Campaign');
-        $messageInfo = $em->getClassMetadata('MailerModule\Entity\Message');
+        $campaignInfo = $em->getClassMetadata('ManipleMailer\Entity\Campaign');
+        $messageInfo = $em->getClassMetadata('ManipleMailer\Entity\Message');
 
         $sql = "
             UPDATE [campaignTable]

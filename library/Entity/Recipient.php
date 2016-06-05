@@ -1,8 +1,8 @@
 <?php
 
-namespace MailerModule\Entity;
+namespace ManipleMailer\Entity;
 
-use MailerModule\RecipientType;
+use ManipleMailer\RecipientType;
 
 /**
  * @Entity
@@ -17,9 +17,9 @@ class Recipient
 {
     /**
      * @Id
-     * @ManyToOne(targetEntity="MailerModule\Entity\Message")
+     * @ManyToOne(targetEntity="ManipleMailer\Entity\Message")
      * @JoinColumn(name="message_id", referencedColumnName="message_id")
-     * @var \MailerModule\Entity\Message
+     * @var \ManipleMailer\Entity\Message
     */
     protected $message;
 
@@ -43,7 +43,7 @@ class Recipient
     protected $name;
 
     /**
-     * @return \MailerModule\Entity\Message
+     * @return \ManipleMailer\Entity\Message
      */
     public function getMessage()
     {
@@ -51,7 +51,7 @@ class Recipient
     }
 
     /**
-     * @param \MailerModule\Entity\Message $message
+     * @param \ManipleMailer\Entity\Message $message
      * @return Recipient
      */
     public function setMessage(Message $message = null)
@@ -97,7 +97,7 @@ class Recipient
     }
 
     /**
-     * @return \MailerModule\RecipientType
+     * @return \ManipleMailer\RecipientType
      */
     public function getType()
     {
@@ -105,7 +105,7 @@ class Recipient
     }
 
     /**
-     * @param string|\MailerModule\RecipientType $type
+     * @param string|\ManipleMailer\RecipientType $type
      * @return Recipient
      */
     public function setType($type)

@@ -1,8 +1,8 @@
 <?php
 
-namespace MailerModule\Entity;
+namespace ManipleMailer\Entity;
 
-use MailerModule\ContentType;
+use ManipleMailer\ContentType;
 use Maniple\ModUser\Entity\User;
 
 /**

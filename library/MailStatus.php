@@ -1,6 +1,6 @@
 <?php
 
-namespace MailerModule;
+namespace ManipleMailer;
 
 class MailStatus extends Enum
 {

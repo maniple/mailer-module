@@ -1,14 +1,14 @@
 <?php
 
-namespace MailerModule;
+namespace ManipleMailer;
 
-use MailerModule\Entity\Message;
-use MailerModule\Queue\QueueInterface;
+use ManipleMailer\Entity\Message;
+use ManipleMailer\Queue\QueueInterface;
 
 class Mailer
 {
     /**
-     * @var \MailerModule\Queue\QueueInterface
+     * @var \ManipleMailer\Queue\QueueInterface
      */
     protected $_messageQueue;
 
@@ -24,8 +24,8 @@ class Mailer
     protected $_eventManager;
 
     /**
-     * @param \MailerModule\Queue\QueueInterface $mailQueue
-     * @return \MailerModule\Mailer
+     * @param \ManipleMailer\Queue\QueueInterface $mailQueue
+     * @return \ManipleMailer\Mailer
      */
     public function setMessageQueue(QueueInterface $mailQueue)
     {
@@ -34,7 +34,7 @@ class Mailer
     }
 
     /**
-     * @return \MailerModule\Queue\QueueInterface
+     * @return \ManipleMailer\Queue\QueueInterface
      * @throws \Exception
      */
     public function getMessageQueue()
@@ -62,7 +62,7 @@ class Mailer
     /**
      * Sends message, reports status in the message. Entity is not persisted.
      *
-     * @param \MailerModule\Entity\Message $message
+     * @param \ManipleMailer\Entity\Message $message
      */
     public function send(Message $message)
     {
@@ -80,7 +80,7 @@ class Mailer
         }
 
         foreach ($message->getRecipients() as $recipient) {
-            /** @var \MailerModule\Entity\Recipient $recipient */
+            /** @var \ManipleMailer\Entity\Recipient $recipient */
             switch ($recipient->getType()) {
                 case RecipientType::TO:
                     $mail->addTo($recipient->getEmail(), $recipient->getName());

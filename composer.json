@@ -1,5 +1,5 @@
 {
-    "name": "maniple/mailer-module",
+    "name": "maniple/maniple-mailer",
     "type": "zefram-module",
     "license": "MIT",
     "authors": [
@@ -14,7 +14,7 @@
     },
     "autoload": {
         "psr-4": {
-            "MailerModule\\": "library/"
+            "ManipleMailer\\": "library/"
         }
     }
 }

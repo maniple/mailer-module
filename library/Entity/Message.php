@@ -1,10 +1,10 @@
 <?php
 
-namespace MailerModule\Entity;
+namespace ManipleMailer\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
-use MailerModule\MailStatus;
-use MailerModule\RecipientType;
+use ManipleMailer\MailStatus;
+use ManipleMailer\RecipientType;
 
 /**
  * @Entity
@@ -26,9 +26,9 @@ class Message
     protected $id;
 
     /**
-     * @ManyToOne(targetEntity="MailerModule\Entity\Campaign")
+     * @ManyToOne(targetEntity="ManipleMailer\Entity\Campaign")
      * @JoinColumn(name="campaign_id", referencedColumnName="campaign_id")
-     * @var \MailerModule\Entity\Campaign
+     * @var \ManipleMailer\Entity\Campaign
      */
     protected $campaign;
 
@@ -115,16 +115,8 @@ class Message
      */
     protected $content;
 
-    /**
-     * @OneToMany(targetEntity="MailerModule\Entity\Recipient", mappedBy="message", cascade={"persist", "remove"})
-     * @var \Doctrine\Common\Collections\ArrayCollection
-     */
-    protected $recipients;
-
     public function __construct()
     {
-        $this->recipients = new ArrayCollection();
-
         $this->setCreatedAt(new \DateTime('now'));
     }
 
@@ -147,7 +139,7 @@ class Message
     }
 
     /**
-     * @return \MailerModule\Entity\Campaign
+     * @return \ManipleMailer\Entity\Campaign
      */
     public function getCampaign()
     {
@@ -155,7 +147,7 @@ class Message
     }
 
     /**
-     * @param \MailerModule\Entity\Campaign $campaign
+     * @param \ManipleMailer\Entity\Campaign $campaign
      * @return Message
      */
     public function setCampaign(Campaign $campaign)

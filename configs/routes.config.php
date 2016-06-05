@@ -4,7 +4,7 @@
         'route' => 'mailer/messages/mark-read/([_a-zA-Z0-9]+).([_a-zA-Z0-9]+)',
         'type' => 'Zend_Controller_Router_Route_Regex',
         'defaults' => array(
-            'module'     => 'mailer-module',
+            'module'     => 'maniple-mailer',
             'controller' => 'messages',
             'action'     => 'mark-read',
         ),

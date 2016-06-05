@@ -1,6 +1,6 @@
 <?php
 
-class MailerModule_MessagesController extends Zefram_Controller_Action
+class ManipleMailer_MessagesController extends Zefram_Controller_Action
 {
     public function markReadAction()
     {
@@ -8,17 +8,17 @@ class MailerModule_MessagesController extends Zefram_Controller_Action
         if ($trackingKey) {
             /** @var \Doctrine\ORM\EntityManager $entityManager */
             $entityManager = $this->getResource('EntityManager');
-            $repository = $entityManager->getRepository('MailerModule\Entity\Message');
+            $repository = $entityManager->getRepository('ManipleMailer\Entity\Message');
 
             // get message by tracking key
-            /** @var \MailerModule\Entity\Message $message */
+            /** @var \ManipleMailer\Entity\Message $message */
             $message = $repository->findOneBy(array(
                 'trackingKey' => $trackingKey,
-                'status' => \MailerModule\MailStatus::SENT,
+                'status' => \ManipleMailer\MailStatus::SENT,
             ));
             if ($message) {
                 $message->setReadAt(new \DateTime('now'));
-                $message->setStatus(\MailerModule\MailStatus::READ);
+                $message->setStatus(\ManipleMailer\MailStatus::READ);
                 $entityManager->persist($message);
 
                 if ($campaign = $message->getCampaign()) {

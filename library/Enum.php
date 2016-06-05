@@ -1,6 +1,6 @@
 <?php
 
-namespace MailerModule;
+namespace ManipleMailer;
 
 use PhpEnum\Enum as BaseEnum;
 

@@ -1,15 +1,15 @@
 <?php
 
-namespace MailerModule\Service;
+namespace ManipleMailer\Service;
 
 use Doctrine\ORM\EntityManager;
-use MailerModule\Queue\DoctrineQueue;
+use ManipleMailer\Queue\DoctrineQueue;
 
 abstract class QueueFactory
 {
     /**
      * @param object $container
-     * @return \MailerModule\Queue\QueueInterface
+     * @return \ManipleMailer\Queue\QueueInterface
      * @throws Exception
      */
     public static function createService($container)

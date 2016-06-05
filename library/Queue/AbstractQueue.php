@@ -1,9 +1,9 @@
 <?php
 
-namespace MailerModule\Queue;
+namespace ManipleMailer\Queue;
 
 use Doctrine\Common\Collections\ArrayCollection;
-use MailerModule\Entity\Message;
+use ManipleMailer\Entity\Message;
 
 abstract class AbstractQueue implements QueueInterface
 {
@@ -65,14 +65,14 @@ abstract class AbstractQueue implements QueueInterface
     /**
      * Performs storage dependent insertion of messages
      *
-     * @param array<\MailerModule\Entity\Message> $messages
+     * @param array<\ManipleMailer\Entity\Message> $messages
      */
     abstract protected function _doInsert(array $messages);
 
     /**
      * Performs storage dependent update of messages
      *
-     * @param array<\MailerModule\Entity\Message> $messages
+     * @param array<\ManipleMailer\Entity\Message> $messages
      */
     abstract protected function _doSave(array $messages);
 }

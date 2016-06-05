@@ -1,8 +1,8 @@
 <?php
 
-namespace MailerModule\Service;
+namespace ManipleMailer\Service;
 
-use MailerModule\Mailer;
+use ManipleMailer\Mailer;
 
 abstract class MailerFactory
 {

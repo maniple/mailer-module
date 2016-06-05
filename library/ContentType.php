@@ -1,6 +1,6 @@
 <?php
 
-namespace MailerModule;
+namespace ManipleMailer;
 
 class ContentType extends Enum
 {
