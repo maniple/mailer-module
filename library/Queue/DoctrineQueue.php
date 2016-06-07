@@ -40,26 +40,34 @@ class DoctrineQueue extends AbstractQueue
         return $this->_entityManager;
     }
 
-
-    public function fetch($maxResults = 1, $lockTimeout = null)
+    public function fetch($maxResults = 1, $lockTimeout = null, $retryDelay = 14400)
     {
         $maxResults = (int) $maxResults;
         $lockTimeout = (int) $lockTimeout;
+        $retryDelay = (int) $retryDelay;
 
         $collection = new ArrayCollection();
 
         $self = $this;
-        $transactional = function (EntityManager $em) use ($self, $maxResults, $lockTimeout, $collection) {
+        $transactional = function (EntityManager $em) use ($self, $maxResults, $lockTimeout, $retryDelay, $collection) {
             $qb = $em->createQueryBuilder();
             $qb->select('m');
             $qb->from('ManipleMailer\Entity\Message', 'm');
             $qb->where('m.status = :statusPending');
             $qb->setParameter('statusPending', MailStatus::PENDING);
+
             if ($lockTimeout > 0) {
+                // check also among messages with expired lock
                 $qb->orWhere('m.status = :statusLocked AND m.lockedAt < :minLockedAt');
                 $qb->setParameter('statusLocked', MailStatus::LOCKED);
                 $qb->setParameter('minLockedAt', time() - $lockTimeout);
             }
+
+            // Check among PENDING failed messages, but only _after_ they fail lock expires
+            // failedAt + retryDelay > now ==> failedAt > now - retryDelay
+            $qb->andWhere('m.failedAt IS NULL OR m.failedAt > :minFailedAt');
+            $qb->setParameter('minFailedAt', time() - $retryDelay);
+
             $qb->orderBy('m.priority', 'DESC');
             $qb->addOrderBy('m.createdAt', 'ASC');
             $qb->setMaxResults($maxResults);

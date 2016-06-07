@@ -8,6 +8,8 @@ use ManipleMailer\MailStatus;
 use ManipleMailer\RecipientType;
 
 /**
+ * Message represents a single mailer job.
+ *
  * @Entity
  * @Table(
  *     name="mailer_messages",
@@ -21,7 +23,7 @@ class Message
 {
     /**
      * @Id
-     * @Column(name="message_id", type="integer")
+     * @Column(name="message_id", type="bigint")
      * @GeneratedValue(strategy="AUTO")
      */
     protected $id;
@@ -32,6 +34,12 @@ class Message
      * @var \ManipleMailer\Entity\Campaign
      */
     protected $campaign;
+
+    /**
+     * @Column(name="priority", type="smallint", options={"default"=0})
+     * @var int
+     */
+    protected $priority = 0;
 
     /**
      * @Column(name="created_at", type="epoch")
@@ -58,10 +66,10 @@ class Message
     protected $readAt;
 
     /**
-     * @Column(name="priority", type="smallint", options={"default"=0})
-     * @var int
+     * @Column(name="failed_at", type="epoch", nullable=true)
+     * @var \DateTime
      */
-    protected $priority = 0;
+    protected $failedAt;
 
     /**
      * @Column(name="fail_count", type="smallint", options={"default"=0})
@@ -172,6 +180,24 @@ class Message
     /**
      * @return mixed
      */
+    public function getPriority()
+    {
+        return $this->priority;
+    }
+
+    /**
+     * @param int $priority
+     * @return Message
+     */
+    public function setPriority($priority)
+    {
+        $this->priority = (int) $priority;
+        return $this;
+    }
+
+    /**
+     * @return mixed
+     */
     public function getCreatedAt()
     {
         return $this->createdAt;
@@ -242,20 +268,20 @@ class Message
     }
 
     /**
-     * @return mixed
+     * @return \DateTime
      */
-    public function getPriority()
+    public function getFailedAt()
     {
-        return $this->priority;
+        return $this->failedAt;
     }
 
     /**
-     * @param mixed $priority
+     * @param \DateTime $failedAt
      * @return Message
      */
-    public function setPriority($priority)
+    public function setFailedAt(\DateTime $failedAt = null)
     {
-        $this->priority = $priority;
+        $this->failedAt = $failedAt;
         return $this;
     }
 
@@ -429,11 +455,17 @@ class Message
     }
 
     /**
-     * @param Address $address
+     * @param Address|string $email
+     * @param string $name
      * @return Message
      */
-    public function setRecipient(Address $address)
+    public function setRecipient($email, $name = null)
     {
+        if ($email instanceof Address) {
+            $address = $email;
+        } else {
+            $address = new Address($email, $name);
+        }
         $this->recipientEmail = $address->getEmail();
         $this->recipientName = $address->getName();
         return $this;

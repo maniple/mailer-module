@@ -7,6 +7,10 @@ use ManipleMailer\Queue\QueueInterface;
 
 class Mailer
 {
+    const EVENT_SEND = 'send';
+
+    const EVENT_SEND_ERROR = 'send.error';
+
     /**
      * @var \ManipleMailer\Queue\QueueInterface
      */
@@ -16,6 +20,8 @@ class Mailer
 
     protected $_lockTimeout = 300;
 
+    protected $_retryTimeout = 14400;
+
     protected $_failPriorityDecrement = 10;
 
     /**
@@ -24,25 +30,42 @@ class Mailer
     protected $_eventManager;
 
     /**
-     * @param \ManipleMailer\Queue\QueueInterface $mailQueue
-     * @return \ManipleMailer\Mailer
+     * @var \Zend_Log
      */
-    public function setMessageQueue(QueueInterface $mailQueue)
+    protected $_logger;
+
+    /**
+     * @param QueueInterface $mailQueue
+     */
+    public function __construct(QueueInterface $mailQueue)
     {
         $this->_messageQueue = $mailQueue;
-        return $this;
     }
 
     /**
      * @return \ManipleMailer\Queue\QueueInterface
-     * @throws \Exception
      */
     public function getMessageQueue()
     {
-        if (!$this->_messageQueue) {
-            throw new \Exception('Mail queue has not been provided');
-        }
         return $this->_messageQueue;
+    }
+
+    /**
+     * @param \Zend_Log $log
+     * @return \ManipleMailer\Mailer
+     */
+    public function setLogger(\Zend_Log $log = null)
+    {
+        $this->_logger = $log;
+        return $this;
+    }
+
+    /**
+     * @return \Zend_Log
+     */
+    public function getLogger()
+    {
+        return $this->_logger;
     }
 
     /**
@@ -55,6 +78,8 @@ class Mailer
                 __CLASS__,
                 get_class($this),
             ));
+            $this->_eventManager->attach(self::EVENT_SEND, array($this, 'onSend'));
+            $this->_eventManager->attach(self::EVENT_SEND_ERROR, array($this, 'onSendError'));
         }
         return $this->_eventManager;
     }
@@ -159,7 +184,7 @@ class Mailer
             }
 
         } else {
-            // TODO Log error
+            $message->setFailedAt(new \DateTime('now'));
             $message->setFailCount($message->getFailCount() + 1);
 
             if ($message->getFailCount() >= $this->_numTries) {
@@ -181,13 +206,13 @@ class Mailer
         $this->getMessageQueue()->save($message);
 
         if ($exception) {
-            $this->getEventManager()->trigger('send.error', $this, array(
+            $this->getEventManager()->trigger(self::EVENT_SEND_ERROR, $this, array(
                 'exception' => $exception,
                 'message' => $message,
                 'mail' => $mail,
             ));
         } else {
-            $this->getEventManager()->trigger('send', $this, array(
+            $this->getEventManager()->trigger(self::EVENT_SEND, $this, array(
                 'message' => $message,
                 'mail' => $mail,
             ));
@@ -198,25 +223,66 @@ class Mailer
      * Put mail in the queue
      *
      * @param Message $mail
-     * @throws \Exception
      */
     public function enqueue(Message $mail)
     {
         $this->getMessageQueue()->insert($mail);
     }
 
-    public function sendFromQueue($count = 1)
+    /**
+     * @param int $count number of messages to fetch from the queue and send
+     * @param int $delay delay in milliseconds between sending consecutive messages
+     */
+    public function sendFromQueue($count = 1, $delay = 500)
     {
         $campaigns = array();
 
-        foreach ($this->getMessageQueue()->fetch($count, $this->_lockTimeout) as $message) {
+        foreach ($this->getMessageQueue()->fetch($count, $this->_lockTimeout, $this->_retryTimeout) as $message) {
             $this->send($message);
 
             if (null !== ($campaign = $message->getCampaign())) {
                 $campaigns[] = $campaign;
             }
 
-            usleep(500000);
+            usleep($delay * 1000);
         }
+    }
+
+    /**
+     * @param \Zend_EventManager_Event $event
+     * @internal
+     */
+    public function onSend(\Zend_EventManager_Event $event)
+    {
+        if (($logger = $this->getLogger()) === null) {
+            return;
+        }
+
+        /** @var Message $message */
+        $message = $event->getParam('message');
+
+        $logger->info(sprintf('[mailer] Message sent to %s', $message->getRecipient()->getEmail()));
+    }
+
+    /**
+     * @param \Zend_EventManager_Event $event
+     * @internal
+     */
+    public function onSendError(\Zend_EventManager_Event $event)
+    {
+        if (($logger = $this->getLogger()) === null) {
+            return;
+        }
+
+        /** @var Message $message */
+        $message = $event->getParam('message');
+        /** @var \Exception $exception */
+        $exception = $event->getParam('exception');
+
+        $logger->err(sprintf(
+            '[mailer] Unable to send message to %s: %s',
+            $message->getRecipient()->getEmail(),
+            $exception->getMessage()
+        ));
     }
 }

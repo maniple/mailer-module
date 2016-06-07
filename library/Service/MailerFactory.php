@@ -12,8 +12,8 @@ abstract class MailerFactory
      */
     public static function createService($container)
     {
-        $mailer = new Mailer();
-        $mailer->setMessageQueue($container->{'Mailer.Queue'});
+        $mailer = new Mailer($container->{'Mailer.Queue'});
+        $mailer->setLogger($container->{'Log'});
         return $mailer;
     }
 }

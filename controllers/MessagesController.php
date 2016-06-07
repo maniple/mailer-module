@@ -32,12 +32,12 @@ class ManipleMailer_MessagesController extends Zefram_Controller_Action
 
         switch ($this->getScalarParam('format')) {
             case 'gif':
-                $response = __DIR__ . '/../resources/blank.gif';
+                $response = __DIR__ . '/../data/blank.gif';
                 $contentType = 'image/gif';
                 break;
 
             case 'mid':
-                $response = __DIR__ . '/../resources/blank.mid';
+                $response = __DIR__ . '/../data/blank.mid';
                 $contentType = 'application/x-midi';
                 break;
 
