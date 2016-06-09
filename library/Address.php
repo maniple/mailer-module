@@ -2,7 +2,7 @@
 
 namespace ManipleMailer;
 
-class Address
+class Address implements AddressInterface
 {
     /**
      * @var string

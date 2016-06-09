@@ -3,7 +3,9 @@
 namespace ManipleMailer\Entity;
 
 use Doctrine\Common\Collections\ArrayCollection;
+use ManipleMailer\AddressInterface;
 use ManipleMailer\Address;
+use ManipleMailer\AddressProxy;
 use ManipleMailer\MailStatus;
 use ManipleMailer\RecipientType;
 
@@ -363,6 +365,22 @@ class Message
     }
 
     /**
+     * @return mixed
+     */
+    public function getReplyToEmail()
+    {
+        return $this->replyToEmail;
+    }
+
+    /**
+     * @return string
+     */
+    public function getReplyToName()
+    {
+        return $this->replyToName;
+    }
+
+    /**
      * @return Address
      */
     public function getReplyTo()
@@ -370,14 +388,14 @@ class Message
         if (null === $this->replyToEmail) {
             return null;
         }
-        return new Address($this->replyToEmail, $this->replyToName);
+        return new AddressProxy(array($this, 'getReplyToEmail'), array($this, 'getReplyToName'));
     }
 
     /**
-     * @param Address $replyTo
+     * @param AddressInterface $replyTo
      * @return Message
      */
-    public function setReplyTo(Address $replyTo = null)
+    public function setReplyTo(AddressInterface $replyTo = null)
     {
         if (null === $replyTo) {
             $this->replyToEmail = null;
@@ -444,6 +462,22 @@ class Message
     }
 
     /**
+     * @return string
+     */
+    public function getRecipientEmail()
+    {
+        return $this->recipientEmail;
+    }
+
+    /**
+     * @return string
+     */
+    public function getRecipientName()
+    {
+        return $this->recipientName;
+    }
+
+    /**
      * @return Address
      */
     public function getRecipient()
@@ -451,17 +485,17 @@ class Message
         if (null === $this->recipientEmail) {
             return null;
         }
-        return new Address($this->recipientEmail, $this->recipientName);
+        return new AddressProxy(array($this, 'getRecipientEmail'), array($this, 'getRecipientName'));
     }
 
     /**
-     * @param Address|string $email
+     * @param AddressInterface|string $email
      * @param string $name
      * @return Message
      */
     public function setRecipient($email, $name = null)
     {
-        if ($email instanceof Address) {
+        if ($email instanceof AddressInterface) {
             $address = $email;
         } else {
             $address = new Address($email, $name);
