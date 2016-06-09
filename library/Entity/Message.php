@@ -16,8 +16,10 @@ use ManipleMailer\RecipientType;
  * @Table(
  *     name="mailer_messages",
  *     indexes={
- *         @Index(columns={"campaign_id"}),
  *         @Index(columns={"status", "priority", "created_at"})
+ *     },
+ *     uniqueConstraints={
+ *         @UniqueConstraint(columns={"campaign_id", "email"})
  *     }
  * )
  */
