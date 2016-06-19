@@ -285,4 +285,38 @@ class Mailer
             $exception->getMessage()
         ));
     }
+
+    /**
+     * @param array $data OPTIONAL
+     * @return Message
+     */
+    public function createMessage(array $data = null)
+    {
+        $message = new Message();
+
+        if ($data) {
+            foreach ($data as $key => $value) {
+                $key = strtolower($key);
+
+                switch ($key) {
+                    case 'recipient':
+                        if (is_array($value)) {
+                            $message->setRecipient($value['email'], $value['name']);
+                        } else {
+                            $message->setRecipient($value);
+                        }
+                        break;
+
+                    default:
+                        $method = 'set' . $key;
+                        if (method_exists($message, $method)) {
+                            $message->{$method}($value);
+                        }
+                        break;
+                }
+            }
+        }
+
+        return $message;
+    }
 }
