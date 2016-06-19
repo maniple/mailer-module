@@ -3,6 +3,7 @@
 namespace ManipleMailer;
 
 use ManipleMailer\Entity\Message;
+use ManipleMailer\Exception\InvalidArgumentException;
 use ManipleMailer\Queue\QueueInterface;
 
 class Mailer
@@ -289,6 +290,7 @@ class Mailer
     /**
      * @param array $data OPTIONAL
      * @return Message
+     * @throws InvalidArgumentException
      */
     public function createMessage(array $data = null)
     {
@@ -296,9 +298,7 @@ class Mailer
 
         if ($data) {
             foreach ($data as $key => $value) {
-                $key = strtolower($key);
-
-                switch ($key) {
+                switch (strtolower($key)) {
                     case 'recipient':
                         if (is_array($value)) {
                             $message->setRecipient($value['email'], $value['name']);
@@ -311,6 +311,8 @@ class Mailer
                         $method = 'set' . $key;
                         if (method_exists($message, $method)) {
                             $message->{$method}($value);
+                        } else {
+                            throw new InvalidArgumentException('Unsupported message property: %s', $key);
                         }
                         break;
                 }
