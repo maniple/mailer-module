@@ -98,6 +98,9 @@ class Mailer
         $mail->setType(\Zend_Mime::MULTIPART_RELATED);
         $mail->setSubject($message->getSubject());
 
+        // TODO set From
+
+
         if (null !== ($replyTo = $message->getReplyTo())) {
             $mail->setReplyTo($replyTo->getEmail(), $replyTo->getName());
         }
@@ -112,6 +115,9 @@ class Mailer
 
             case ContentType::HTML:
                 $html = $message->getContent();
+
+                // set subject in <title> tag
+                $this->setHtmlTitle($html, $message->getSubject());
 
                 // insert files
                 $srcRegex = '/[\s]src=(?P<src>("[^"]+")|(\'[^\']+\'))/i';
@@ -221,12 +227,42 @@ class Mailer
     }
 
     /**
+     * @param string $html
+     * @param string $title
+     * @return string
+     * @throws InvalidArgumentException
+     */
+    public function setHtmlTitle($html, $title)
+    {
+        if (preg_match('/<title[^>]*>/', $html, $match, PREG_OFFSET_CAPTURE)) {
+            $offset = $match[0][1] + strlen($match[0][0]);
+            if (($pos = stripos($html, '</title>', $offset)) === false) {
+                throw new InvalidArgumentException('Closing tag for TITLE element not found');
+            }
+            $html = substr($html, 0, $offset)
+                . htmlspecialchars($title)
+                . substr($html, $pos);
+        } else {
+            if (($pos = stripos($html, '</head>')) === false) {
+                throw new InvalidArgumentException('Closing tag for HEAD element not found');
+            }
+            $html = substr($html, 0, $pos)
+                . sprintf('<title>%s</title>', htmlspecialchars($title))
+                . substr($html, $pos);
+        }
+
+        return $html;
+    }
+
+    /**
      * Put mail in the queue
      *
      * @param Message $mail
+     * @param int $priority OPTIONAL
      */
-    public function enqueue(Message $mail)
+    public function enqueue(Message $mail, $priority = Priority::NORMAL)
     {
+        $mail->setPriority((int) $priority);
         $this->getMessageQueue()->insert($mail);
     }
 
@@ -304,6 +340,14 @@ class Mailer
                             $message->setRecipient($value['email'], $value['name']);
                         } else {
                             $message->setRecipient($value);
+                        }
+                        break;
+
+                    case 'replyto':
+                        if (is_array($value)) {
+                            $message->setReplyTo($value['email'], $value['name']);
+                        } else {
+                            $message->setReplyTo($value);
                         }
                         break;
 

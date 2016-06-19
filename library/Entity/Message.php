@@ -6,6 +6,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use ManipleMailer\AddressInterface;
 use ManipleMailer\Address;
 use ManipleMailer\AddressProxy;
+use ManipleMailer\ContentType;
 use ManipleMailer\MailStatus;
 use ManipleMailer\RecipientType;
 
@@ -394,17 +395,21 @@ class Message
     }
 
     /**
-     * @param AddressInterface $replyTo
+     * @param string|AddressInterface $email
+     * @param string $name OPTIONAL
      * @return Message
      */
-    public function setReplyTo(AddressInterface $replyTo = null)
+    public function setReplyTo($email, $name = null)
     {
-        if (null === $replyTo) {
+        if (null === $email) {
             $this->replyToEmail = null;
             $this->replyToName = null;
         } else {
-            $this->replyToEmail = $replyTo->getEmail();
-            $this->replyToName = $replyTo->getName();
+            if (!$email instanceof AddressInterface) {
+                $email = new Address($email, $name);
+            }
+            $this->replyToEmail = $email->getEmail();
+            $this->replyToName = $email->getName();
         }
         return $this;
     }
@@ -492,18 +497,38 @@ class Message
 
     /**
      * @param AddressInterface|string $email
-     * @param string $name
+     * @param string $name OPTIONAL
      * @return Message
      */
     public function setRecipient($email, $name = null)
     {
-        if ($email instanceof AddressInterface) {
-            $address = $email;
-        } else {
-            $address = new Address($email, $name);
+        if (!$email instanceof AddressInterface) {
+            $email = new Address($email, $name);
         }
-        $this->recipientEmail = $address->getEmail();
-        $this->recipientName = $address->getName();
+        $this->recipientEmail = $email->getEmail();
+        $this->recipientName = $email->getName();
+        return $this;
+    }
+
+    /**
+     * @param string $html
+     * @return Message
+     */
+    public function setBodyHtml($html)
+    {
+        $this->setContentType(ContentType::HTML);
+        $this->setContent($html);
+        return $this;
+    }
+
+    /**
+     * @param string $text
+     * @return Message
+     */
+    public function setBodyText($text)
+    {
+        $this->setContentType(ContentType::TEXT);
+        $this->setContent($text);
         return $this;
     }
 }
