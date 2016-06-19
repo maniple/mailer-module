@@ -117,7 +117,7 @@ class Mailer
                 $html = $message->getContent();
 
                 // set subject in <title> tag
-                $this->setHtmlTitle($html, $message->getSubject());
+                $html = $this->setHtmlTitle($html, $message->getSubject());
 
                 // insert files
                 $srcRegex = '/[\s]src=(?P<src>("[^"]+")|(\'[^\']+\'))/i';
