@@ -8,10 +8,6 @@ use ManipleMailer\Queue\QueueInterface;
 
 class Mailer
 {
-    const EVENT_SEND = 'send';
-
-    const EVENT_SEND_ERROR = 'send.error';
-
     /**
      * @var \ManipleMailer\Queue\QueueInterface
      */
@@ -29,6 +25,11 @@ class Mailer
      * @var \Zend_EventManager_EventManager
      */
     protected $_eventManager;
+
+    /**
+     * @var MailerEvent
+     */
+    protected $_event;
 
     /**
      * @var \Zend_Log
@@ -79,14 +80,36 @@ class Mailer
                 __CLASS__,
                 get_class($this),
             ));
-            $this->_eventManager->attach(self::EVENT_SEND, array($this, 'onSend'));
-            $this->_eventManager->attach(self::EVENT_SEND_ERROR, array($this, 'onSendError'));
+            $this->_eventManager->attach(MailerEvent::EVENT_SEND, array($this, 'onSend'));
+            $this->_eventManager->attach(MailerEvent::EVENT_SEND_ERROR, array($this, 'onSendError'));
         }
         return $this->_eventManager;
     }
 
     /**
-     * Sends message, reports status in the message. Entity is not persisted.
+     * @return MailerEvent
+     */
+    public function getEvent()
+    {
+        if (!$this->_event instanceof MailerEvent) {
+            $this->setEvent(new MailerEvent());
+        }
+        return $this->_event;
+    }
+
+    /**
+     * @param MailerEvent $event
+     * @return Mailer
+     */
+    public function setEvent(MailerEvent $event)
+    {
+        $event->setTarget($this);
+        $this->_event = $event;
+        return $this;
+    }
+
+    /**
+     * Sends message, reports status in the message.
      *
      * @param \ManipleMailer\Entity\Message $message
      */
@@ -171,10 +194,14 @@ class Mailer
                 break;
         }
 
-        $this->getEventManager()->trigger('send.pre', $this, array(
-            'message' => $message,
-            'mail' => $mail,
-        ));
+        $events = $this->getEventManager();
+
+        $event = $this->getEvent();
+        $event->setMessage($message);
+
+        $event->setName(MailerEvent::EVENT_SEND_PRE);
+        $event->setParams(array('mail' => $mail));
+        $events->trigger($event);
 
         try {
             $mail->send();
@@ -207,23 +234,27 @@ class Mailer
 
         // unlock message
         $message->setLockedAt(null);
+        /** @noinspection PhpInternalEntityUsedInspection */
         $message->setLockKey(null);
 
         // save message for logging and stats
         $this->getMessageQueue()->save($message);
 
         if ($exception) {
-            $this->getEventManager()->trigger(self::EVENT_SEND_ERROR, $this, array(
+            $event->setName(MailerEvent::EVENT_SEND_ERROR);
+            $event->setMessage($message);
+            $event->setParams(array(
                 'exception' => $exception,
-                'message' => $message,
                 'mail' => $mail,
             ));
         } else {
-            $this->getEventManager()->trigger(self::EVENT_SEND, $this, array(
-                'message' => $message,
+            $event->setName(MailerEvent::EVENT_SEND);
+            $event->setMessage($message);
+            $event->setParams(array(
                 'mail' => $mail,
             ));
         }
+        $events->trigger($event);
     }
 
     /**
@@ -286,10 +317,10 @@ class Mailer
     }
 
     /**
-     * @param \Zend_EventManager_Event $event
+     * @param MailerEvent $event
      * @internal
      */
-    public function onSend(\Zend_EventManager_Event $event)
+    public function onSend(MailerEvent $event)
     {
         if (($logger = $this->getLogger()) === null) {
             return;
@@ -302,10 +333,10 @@ class Mailer
     }
 
     /**
-     * @param \Zend_EventManager_Event $event
+     * @param MailerEvent $event
      * @internal
      */
-    public function onSendError(\Zend_EventManager_Event $event)
+    public function onSendError(MailerEvent $event)
     {
         if (($logger = $this->getLogger()) === null) {
             return;

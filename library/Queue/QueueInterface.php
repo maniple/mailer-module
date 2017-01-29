@@ -12,9 +12,10 @@ interface QueueInterface
      *
      * @param int $maxResults
      * @param int $lockTimeout
+     * @param int $retryDelay
      * @return \Doctrine\Common\Collections\ArrayCollection<\ManipleMailer\Entity\Mail>
      */
-    public function fetch($maxResults = 1, $lockTimeout = null);
+    public function fetch($maxResults, $lockTimeout, $retryDelay);
 
     /**
      * Inserts messages in the queue.
