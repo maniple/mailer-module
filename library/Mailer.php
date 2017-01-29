@@ -352,7 +352,7 @@ class Mailer
         }
 
         /** @var Message $message */
-        $message = $event->getParam('message');
+        $message = $event->getMessage();
 
         $logger->info(sprintf('[mailer] Message sent to %s', $message->getRecipient()->getEmail()));
     }
@@ -368,7 +368,7 @@ class Mailer
         }
 
         /** @var Message $message */
-        $message = $event->getParam('message');
+        $message = $event->getMessage();
         /** @var \Exception $exception */
         $exception = $event->getParam('exception');
 
