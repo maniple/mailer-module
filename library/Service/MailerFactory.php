@@ -12,8 +12,15 @@ abstract class MailerFactory
      */
     public static function createService($container)
     {
+        $config = $container->{'Config'};
+
         $mailer = new Mailer($container->{'Mailer.Queue'});
         $mailer->setLogger($container->{'Log'});
+
+        if (isset($config['mailer']['tracking'])) {
+            $mailer->setTrackingConfig($config['mailer']['tracking']);
+        }
+
         return $mailer;
     }
 }

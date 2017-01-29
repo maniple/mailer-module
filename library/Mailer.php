@@ -36,6 +36,11 @@ class Mailer
      */
     protected $_logger;
 
+    protected $_trackingConfig = array(
+        'host'   => null,
+        'scheme' => null,
+    );
+
     /**
      * @param QueueInterface $mailQueue
      */
@@ -68,6 +73,20 @@ class Mailer
     public function getLogger()
     {
         return $this->_logger;
+    }
+
+    public function setTrackingConfig(array $trackingConfig)
+    {
+        $this->_trackingConfig = array_merge(
+            $this->_trackingConfig,
+            $trackingConfig
+        );
+        return $this;
+    }
+
+    public function getTrackingConfig()
+    {
+        return $this->_trackingConfig;
     }
 
     /**
@@ -176,15 +195,21 @@ class Mailer
                 $trackingKey = bin2hex(random_bytes(16));
                 $pos = stripos($html, '</body>');
                 if ($pos !== false) {
-                    // FIXME No globals and singletons!
+                    // contrary to what the name suggests ServerUrl helper contains no
+                    // view-related logic whatsoever and can be used standalone
+
+                    $serverUrl = new \Zend_View_Helper_ServerUrl();
+                    $serverUrl->setHost($this->_trackingConfig['host']);
+                    $serverUrl->setScheme($this->_trackingConfig['scheme']);
+
                     /** @var \Zend_View $view */
                     $view = \Zend_Controller_Front::getInstance()->getParam('bootstrap')->getResource('View');
 
                     $html = substr($html, 0, $pos)
                         . sprintf(
                             '<img src="%s" style="width:1px;height:1px;opacity:0.05" /><bgsound src="%s" volume="-10000"/>',
-                            $view->serverUrl() . $view->url('mailer.messages.mark_read', array('tracking_key' => $trackingKey, 'format' => 'gif')),
-                            $view->serverUrl() . $view->url('mailer.messages.mark_read', array('tracking_key' => $trackingKey, 'format' => 'mid'))
+                            $serverUrl->serverUrl() . $view->url('mailer.messages.mark_read', array('tracking_key' => $trackingKey, 'format' => 'gif')),
+                            $serverUrl->serverUrl() . $view->url('mailer.messages.mark_read', array('tracking_key' => $trackingKey, 'format' => 'mid'))
                           )
                         . substr($html, $pos);
                 }
