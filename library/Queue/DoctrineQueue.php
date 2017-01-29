@@ -79,6 +79,8 @@ class DoctrineQueue extends AbstractQueue
                 /** @var Message $message */
                 $message->setStatus(MailStatus::LOCKED);
                 $message->setLockedAt(new \DateTime('now'));
+
+                /** @noinspection PhpInternalEntityUsedInspection */
                 $message->setLockKey($self->generateRandomKey());
 
                 $em->persist($message);
@@ -94,6 +96,7 @@ class DoctrineQueue extends AbstractQueue
     {
         $this->getEntityManager()->transactional(function (EntityManager $em) use ($messages) {
             foreach ($messages as $message) {
+                /** @var Message $message */
                 if ($em->contains($message)) {
                     throw new \Exception(sprintf(
                         'Message ID=%d is already present in the queue, cannot re-insert',
