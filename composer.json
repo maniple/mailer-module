@@ -1,6 +1,6 @@
 {
     "name": "maniple/maniple-mailer",
-    "type": "zefram-module",
+    "type": "zend1-module",
     "license": "MIT",
     "authors": [
         {
@@ -10,6 +10,7 @@
     ],
     "require": {
         "paragonie/random_compat": "^1.2",
+        "xemlock/zend1-composer-installer": "*",
         "xemlock/php-enum": "*"
     },
     "autoload": {
