@@ -1,6 +1,6 @@
 <?php
 
-class ManipleMailer_MessagesController extends Zefram_Controller_Action
+class ManipleMailer_MessagesController extends Maniple_Controller_Action
 {
     public function markReadAction()
     {
