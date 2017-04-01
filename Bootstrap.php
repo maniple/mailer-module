@@ -2,6 +2,11 @@
 
 class ManipleMailer_Bootstrap extends Maniple_Application_Module_Bootstrap
 {
+    public function getModuleDependencies()
+    {
+        return array('maniple-core'); // entityManager.config
+    }
+
     public function getResourceConfig()
     {
         return require __DIR__ . '/configs/resources.config.php';
