@@ -4,7 +4,7 @@ namespace ManipleMailer\Tool\Provider;
 
 use ManipleMailer\MailerEvent;
 
-class Mail extends \Zend_Tool_Framework_Provider_Abstract
+class Mail extends \Maniple_Tool_Provider_Abstract
 {
     public function getName()
     {
@@ -24,7 +24,7 @@ class Mail extends \Zend_Tool_Framework_Provider_Abstract
             ));
         }
 
-        $application = maniple_bootstrap();
+        $application = $this->getApplication()->bootstrap();
 
         /** @var \ManipleMailer\Mailer $mailer */
         $mailer = $application->getBootstrap()->getResource('Mailer.Mailer');
