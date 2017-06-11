@@ -6,11 +6,6 @@ use ManipleMailer\MailerEvent;
 
 class Mail extends \Maniple_Tool_Provider_Abstract
 {
-    public function getName()
-    {
-        return 'mail';
-    }
-
     /**
      * @param int $numMessages Number of messages from the queue to be sent
      * @throws \Zend_Tool_Project_Provider_Exception
@@ -24,7 +19,7 @@ class Mail extends \Maniple_Tool_Provider_Abstract
             ));
         }
 
-        $application = $this->getApplication()->bootstrap();
+        $application = $this->_getApplication()->bootstrap();
 
         /** @var \ManipleMailer\Mailer $mailer */
         $mailer = $application->getBootstrap()->getResource('Mailer.Mailer');
