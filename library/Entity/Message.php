@@ -34,7 +34,7 @@ class Message
     protected $id;
 
     /**
-     * @ManyToOne(targetEntity="ManipleMailer\Entity\Campaign")
+     * @ManyToOne(targetEntity="\ManipleMailer\Entity\Campaign")
      * @JoinColumn(name="campaign_id", referencedColumnName="campaign_id")
      * @var \ManipleMailer\Entity\Campaign
      */
@@ -309,7 +309,7 @@ class Message
     }
 
     /**
-     * @return MailStatus
+     * @return string
      */
     public function getStatus()
     {
@@ -384,7 +384,7 @@ class Message
     }
 
     /**
-     * @return Address
+     * @return AddressInterface
      */
     public function getReplyTo()
     {
@@ -485,7 +485,7 @@ class Message
     }
 
     /**
-     * @return Address
+     * @return AddressInterface
      */
     public function getRecipient()
     {

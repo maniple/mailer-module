@@ -10,10 +10,16 @@
     ],
     "require": {
         "paragonie/random_compat": "^1.2",
+        "maniple/maniple-doctrine": "*",
+        "maniple/maniple-user": "*",
         "xemlock/zend1-composer-installer": "*",
         "xemlock/php-enum": "*"
     },
     "autoload": {
+        "classmap": [
+            "Bootstrap.php",
+            "controllers/"
+        ],
         "psr-4": {
             "ManipleMailer\\": "library/"
         }

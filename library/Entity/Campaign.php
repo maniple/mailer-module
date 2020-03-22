@@ -4,7 +4,6 @@ namespace ManipleMailer\Entity;
 
 use ManipleMailer\Address;
 use ManipleMailer\ContentType;
-use Maniple\ModUser\Entity\User;
 
 /**
  * @Entity
@@ -32,9 +31,9 @@ class Campaign
     protected $createdAt;
 
     /**
-     * @ManyToOne(targetEntity="Maniple\ModUser\Entity\User")
+     * @ManyToOne(targetEntity="\ManipleUser_Entity_User")
      * @JoinColumn(name="created_by", referencedColumnName="user_id")
-     * @var \Maniple\ModUser\Entity\User
+     * @var \ManipleUser_Entity_User
      */
     protected $createdBy;
 
@@ -146,7 +145,7 @@ class Campaign
     }
 
     /**
-     * @return \Maniple\ModUser\Entity\User
+     * @return \ManipleUser_Entity_User
      */
     public function getCreatedBy()
     {
@@ -154,10 +153,10 @@ class Campaign
     }
 
     /**
-     * @param \Maniple\ModUser\Entity\User $createdBy
+     * @param \ManipleUser_Entity_User $createdBy
      * @return Campaign
      */
-    public function setCreatedBy(User $createdBy = null)
+    public function setCreatedBy(\ManipleUser_Entity_User $createdBy = null)
     {
         $this->createdBy = $createdBy;
         return $this;

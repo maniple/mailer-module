@@ -4,7 +4,7 @@ class ManipleMailer_Bootstrap extends Maniple_Application_Module_Bootstrap
 {
     public function getModuleDependencies()
     {
-        return array('maniple-core'); // entityManager.config
+        return array('maniple-user', 'maniple-doctrine'); // entityManager.config
     }
 
     public function getResourceConfig()
@@ -12,23 +12,23 @@ class ManipleMailer_Bootstrap extends Maniple_Application_Module_Bootstrap
         return require __DIR__ . '/configs/resources.config.php';
     }
 
-    protected function _initRouter()
+    public function getRoutesConfig()
     {
-        /** @var Zend_Application_Bootstrap_BootstrapAbstract $bootstrap */
-        $bootstrap = $this->getApplication();
-        $bootstrap->bootstrap('FrontController');
-
-        /** @var Zend_Controller_Router_Rewrite $router */
-        $router = $bootstrap->getResource('FrontController')->getRouter();
-        $router->addConfig(new Zend_Config(require __DIR__ . '/configs/routes.config.php'));
+        return require __DIR__ . '/configs/routes.config.php';
     }
 
     protected function _initEntityManager()
     {
         $bootstrap = $this->getApplication();
 
-        /** @var ManipleCore\Doctrine\Config $config */
+        /** @var ManipleDoctrine\Config $config */
         $config = $bootstrap->getResource('EntityManager.config');
         $config->addPath(__DIR__ . '/library/Entity');
+    }
+
+    protected function _initView()
+    {
+        // ensure View is bootstrapped as it's in Mailer::send()
+        $this->getApplication()->bootstrap('View');
     }
 }
